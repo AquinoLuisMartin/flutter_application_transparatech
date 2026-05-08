@@ -18,7 +18,7 @@
 
 ## Project Overview
 
-This study looks into the Verifi mobile app, designed to improve financial transparency and accountability in student organizations at the Polytechnic University of the Philippines � Sta. Maria Bulacan Campus. The app lets students submit, track, and verify financial documents (like financial reports and asset records) digitally, making the process easier, faster, and more secure.
+This study looks into the Verifi mobile app, designed to improve financial transparency and accountability in student organizations at the Polytechnic University of the Philippines Sta. Maria Bulacan Campus. The app lets students submit, track, and verify financial documents (like financial reports and asset records) digitally, making the process easier, faster, and more secure.
 
 The system is created in response to common issues in the government and other organizations, where lack of transparency in budgeting and auditing leads to corruption and mismanagement of funds. Similarly, many student organizations still rely on manual paper-based methods for submitting financial records, which can lead to mistakes, delays, and even tampering. Verifi aims to solve these problems by offering a modern, digital solution for financial transparency.
 
