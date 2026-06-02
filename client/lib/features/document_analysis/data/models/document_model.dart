@@ -10,6 +10,7 @@ class Document {
   final DateTime submissionDate;
   final DateTime lastModified;
   final bool isDeleted;
+  final String? statusName;
 
   Document({
     required this.documentId,
@@ -23,21 +24,23 @@ class Document {
     required this.submissionDate,
     required this.lastModified,
     required this.isDeleted,
+    this.statusName,
   });
 
   factory Document.fromJson(Map<String, dynamic> json) {
     return Document(
-      documentId: json['documentId'] ?? 0,
-      documentTitle: json['documentTitle'] ?? '',
-      documentDescription: json['documentDescription'],
-      filePath: json['filePath'] ?? '',
+      documentId: json['documentId'] ?? json['id'] ?? 0,
+      documentTitle: json['documentTitle'] ?? json['title'] ?? '',
+      documentDescription: json['documentDescription'] ?? json['description'],
+      filePath: json['filePath'] ?? json['filePath'] ?? '',
       fileSize: json['fileSize'],
       fileType: json['fileType'],
       uploadedBy: json['uploadedBy'] ?? 0,
       statusId: json['statusId'] ?? 0,
-      submissionDate: DateTime.parse(json['submissionDate'] ?? DateTime.now().toIso8601String()),
-      lastModified: DateTime.parse(json['lastModified'] ?? DateTime.now().toIso8601String()),
+      submissionDate: DateTime.parse(json['submissionDate'] ?? json['createdAt'] ?? DateTime.now().toIso8601String()),
+      lastModified: DateTime.parse(json['lastModified'] ?? json['createdAt'] ?? DateTime.now().toIso8601String()),
       isDeleted: json['isDeleted'] == 1 || json['isDeleted'] == true,
+      statusName: json['status'] ?? json['statusName'],
     );
   }
 
@@ -54,6 +57,7 @@ class Document {
       'submissionDate': submissionDate.toIso8601String(),
       'lastModified': lastModified.toIso8601String(),
       'isDeleted': isDeleted ? 1 : 0,
+      'statusName': statusName,
     };
   }
 }

@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { db } from '../db/index.js';
-import { accounts } from '../db/schema.js';
+import { accounts, organizations } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
 import * as authService from '../services/auth.service.js';
 import { AuthRequest } from '../middleware/auth.middleware.js';
@@ -8,7 +8,7 @@ import { AuthRequest } from '../middleware/auth.middleware.js';
 // Sign up
 export const signup = async (req: Request, res: Response) => {
   try {
-    const { email, studentId, password, fullName, role } = req.body;
+    const { email, studentId, password, fullName, role, organizationCode } = req.body;
 
     // Validate input
     if (!email || !studentId || !password) {
@@ -55,6 +55,19 @@ export const signup = async (req: Request, res: Response) => {
     // Get role
     const roleId = await authService.getRoleIdByName(role || 'Student');
 
+    // Get organization if provided
+    let organizationId = null;
+    if (organizationCode) {
+      const org = await db
+        .select()
+        .from(organizations)
+        .where(eq(organizations.orgCode, organizationCode))
+        .limit(1);
+      if (org.length > 0) {
+        organizationId = org[0].organizationId;
+      }
+    }
+
     // Create new account
     try {
       await db
@@ -67,6 +80,7 @@ export const signup = async (req: Request, res: Response) => {
           firstName: firstName,
           lastName: lastName,
           roleId: roleId,
+          organizationId: organizationId,
           isActive: 1,
           isVerified: 0,
           createdAt: new Date(),

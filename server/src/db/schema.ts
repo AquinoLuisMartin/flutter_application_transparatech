@@ -63,17 +63,50 @@ export const accounts = sqliteTable("accounts", {
   createdAt: integer("created_at", { mode: "timestamp" }).default(sql`CURRENT_TIMESTAMP`).notNull(),
   updatedAt: integer("updated_at", { mode: "timestamp" }).default(sql`CURRENT_TIMESTAMP`).notNull(),
   deactivatedAt: integer("deactivated_at", { mode: "timestamp" }),
+  organizationId: integer("organization_id").references(() => organizations.organizationId, { onDelete: "set null" }),
 }, (table) => ({
   idxUsername: index("idx_acc_username").on(table.username),
   idxStudentId: index("idx_acc_student_id").on(table.studentId),
   idxEmail: index("idx_acc_email").on(table.email),
   idxRoleId: index("idx_acc_role_id").on(table.roleId),
+  idxOrganizationId: index("idx_acc_org_id").on(table.organizationId),
   idxIsActive: index("idx_acc_is_active").on(table.isActive),
   idxCreatedAt: index("idx_acc_created_at").on(table.createdAt),
   checkIsActive: check("accounts_is_active_check", sql`${table.isActive} IN (0, 1)`),
   checkIsVerified: check("accounts_is_verified_check", sql`${table.isVerified} IN (0, 1)`),
   checkEmailDomain: check("accounts_email_domain_check", sql`${table.email} LIKE '%@iskolarngbayan.pup.edu.ph' OR ${table.email} LIKE '%@pup.edu.ph'`),
   checkStudentIdFormat: check("accounts_student_id_format_check", sql`${table.studentId} LIKE '____-_____-SM-_' OR ${table.studentId} LIKE 'FA-____-SM-____'`),
+}));
+
+// ============================================
+// 3.5 ORGANIZATIONS TABLE
+// ============================================
+export const organizations = sqliteTable("organizations", {
+  organizationId: integer("organization_id").primaryKey({ autoIncrement: true }),
+  orgName: text("org_name").unique().notNull(),
+  orgCode: text("org_code").unique().notNull(), // e.g. COSC, ISITE
+  description: text("description"),
+  logoUrl: text("logo_url"),
+  isActive: integer("is_active").default(1).notNull(),
+  createdAt: integer("created_at", { mode: "timestamp" }).default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => ({
+  idxOrgCode: index("idx_org_code").on(table.orgCode),
+  checkIsActive: check("organizations_is_active_check", sql`${table.isActive} IN (0, 1)`),
+}));
+
+// ============================================
+// 3.6 BUDGETS TABLE
+// ============================================
+export const budgets = sqliteTable("budgets", {
+  budgetId: integer("budget_id").primaryKey({ autoIncrement: true }),
+  organizationId: integer("organization_id").notNull().references(() => organizations.organizationId, { onDelete: "cascade" }),
+  academicYear: text("academic_year").notNull(), // e.g. 2025-2026
+  totalBudget: integer("total_budget").notNull(), // in cents or smallest unit
+  spentAmount: integer("spent_amount").default(0).notNull(),
+  remainingAmount: integer("remaining_amount").notNull(),
+  lastUpdated: integer("last_updated", { mode: "timestamp" }).default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => ({
+  idxOrgYear: index("idx_budget_org_year").on(table.organizationId, table.academicYear),
 }));
 
 // ============================================

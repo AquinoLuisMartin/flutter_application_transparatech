@@ -1,10 +1,9 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_application_transparatech/core/widgets/custom_text_form_field.dart';
 import 'package:flutter_application_transparatech/core/widgets/custom_dropdown_field.dart';
 import 'package:flutter_application_transparatech/core/network/http_client.dart';
 import 'package:flutter_application_transparatech/core/utils/logger.dart';
-import 'dart:convert';
 import 'profile_setup_page.dart';
 import 'auth_page.dart';
 
@@ -414,6 +413,7 @@ class _SignUpFormPageState extends State<SignUpFormPage> {
                 prefixIcon: 'role',
                 items: const [
                   DropdownMenuItem(value: 'Student', child: Text('Student')),
+                  DropdownMenuItem(value: 'Officer', child: Text('Officer')),
                   DropdownMenuItem(value: 'Admin', child: Text('Admin')),
                 ],
                 onChanged: (value) {

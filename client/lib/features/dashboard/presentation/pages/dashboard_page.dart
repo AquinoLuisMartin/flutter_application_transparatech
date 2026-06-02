@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import 'package:flutter_application_transparatech/features/auth/presentation/providers/auth_provider.dart';
+import 'package:flutter_application_transparatech/features/document_analysis/presentation/providers/document_provider.dart';
 import 'notifications_page.dart';
 import 'settings_page.dart';
 
@@ -14,6 +17,19 @@ class DashboardPage extends StatefulWidget {
 
 class _DashboardPageState extends State<DashboardPage> {
   int _selectedIndex = 0;
+  int? _overrideRoleId; // Developer role override for dashboard UI testing
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      if (authProvider.token != null) {
+        Provider.of<DocumentProvider>(context, listen: false)
+            .fetchDocuments(authProvider.token!);
+      }
+    });
+  }
 
   String _getGreeting() {
     final hour = DateTime.now().hour;
@@ -195,6 +211,13 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Widget _buildHeader({bool roundedBottom = true, Widget? bottomContent}) {
+    final authProvider = Provider.of<AuthProvider>(context);
+    final user = authProvider.currentUser;
+    final String fullName = user != null ? '${user.firstName} ${user.lastName}' : 'Juan Santos';
+    final int activeRoleId = _overrideRoleId ?? user?.roleId ?? 2;
+    final String roleName = _getRoleName(activeRoleId);
+    final String greetingLabel = roleName == 'Student' ? 'Iskolar' : roleName;
+
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
@@ -223,7 +246,7 @@ class _DashboardPageState extends State<DashboardPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '${_getGreeting()}, Iskolar',
+                      '${_getGreeting()}, $greetingLabel',
                       style: GoogleFonts.inter(
                         fontSize: 13,
                         fontWeight: FontWeight.w400,
@@ -233,7 +256,7 @@ class _DashboardPageState extends State<DashboardPage> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Juan Santos',
+                      fullName,
                       style: GoogleFonts.inter(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
@@ -297,8 +320,8 @@ class _DashboardPageState extends State<DashboardPage> {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(color: const Color(0xFF3B48F6), width: 2),
-                      image: const DecorationImage(
-                        image: NetworkImage('https://ui-avatars.com/api/?name=Juan+Santos&background=0D8ABC&color=fff'), // Placeholder
+                      image: DecorationImage(
+                        image: NetworkImage('https://ui-avatars.com/api/?name=${Uri.encodeComponent(fullName)}&background=0D8ABC&color=fff'), // Dynamic avatar
                         fit: BoxFit.cover,
                       ),
                     ),
@@ -542,6 +565,1039 @@ class _DashboardPageState extends State<DashboardPage> {
       );
   }
 
+  String _getRoleName(int roleId) {
+    switch (roleId) {
+      case 1:
+        return 'Admin';
+      case 2:
+        return 'Student';
+      case 3:
+        return 'Officer';
+      default:
+        return 'Student';
+    }
+  }
+
+  String _getMonthName(int month) {
+    const months = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    if (month >= 1 && month <= 12) {
+      return months[month - 1];
+    }
+    return '';
+  }
+
+  Widget _buildCardAction(IconData icon, String label, VoidCallback onTap) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: Colors.white, size: 16),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showUploadBottomSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 48,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Quick Actions',
+                style: GoogleFonts.inter(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF1F2937),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Select an operation to manage organization funds',
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  color: Colors.grey.shade500,
+                ),
+              ),
+              const SizedBox(height: 24),
+              _buildBottomSheetItem(
+                icon: Icons.cloud_upload_outlined,
+                color: Colors.blue.shade600,
+                title: 'Upload Financial Document',
+                subtitle: 'Submit Q1-Q4 expense reports, budgets, or official receipts',
+                onTap: () {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Document upload flow started.')),
+                  );
+                },
+              ),
+              const SizedBox(height: 16),
+              _buildBottomSheetItem(
+                icon: Icons.auto_awesome_outlined,
+                color: Colors.purple.shade600,
+                title: 'AI Document Scan & Extract',
+                subtitle: 'Extract values and check audit compliance using AI model',
+                onTap: () {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('AI extraction scan started.')),
+                  );
+                },
+              ),
+              const SizedBox(height: 16),
+              _buildBottomSheetItem(
+                icon: Icons.gpp_good_outlined,
+                color: const Color(0xFF10B981),
+                title: 'Verify SHA-256 Hash Integrity',
+                subtitle: 'Check if document hashes match registration records',
+                onTap: () {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Hash verification started.')),
+                  );
+                },
+              ),
+              const SizedBox(height: 24),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildBottomSheetItem({
+    required IconData icon,
+    required Color color,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.grey.shade100),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.02),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: color, size: 24),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF1F2937),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: GoogleFonts.inter(
+                      fontSize: 11,
+                      color: Colors.grey.shade500,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right, color: Colors.grey.shade400, size: 18),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOfficerDocumentCard({
+    required String title,
+    required String date,
+    required String hash,
+    required String status,
+    VoidCallback? onTap,
+  }) {
+    Color badgeBg;
+    Color badgeText;
+    IconData iconData = Icons.receipt_long_outlined;
+    Color iconColor;
+    Color iconBg;
+
+    if (status.toUpperCase() == 'APPROVED') {
+      badgeBg = const Color(0xFFE6F4EA);
+      badgeText = const Color(0xFF137333);
+      iconColor = const Color(0xFF10B981);
+      iconBg = const Color(0xFFE6F4EA);
+    } else if (status.toUpperCase() == 'PENDING') {
+      badgeBg = const Color(0xFFFEF7E0);
+      badgeText = const Color(0xFFB06000);
+      iconColor = const Color(0xFFF59E0B);
+      iconBg = const Color(0xFFFEF7E0);
+    } else {
+      badgeBg = const Color(0xFFFCE8E6);
+      badgeText = const Color(0xFFC5221F);
+      iconColor = const Color(0xFFEF4444);
+      iconBg = const Color(0xFFFCE8E6);
+    }
+
+    return GestureDetector(
+      onTap: onTap ?? () {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Details for: $title'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.grey.shade100),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.02),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: iconBg,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                iconData,
+                color: iconColor,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFF1F2937),
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Text(
+                        date,
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.grey.shade500,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        width: 4,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade300,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Icon(
+                        Icons.tag,
+                        size: 10,
+                        color: Colors.grey.shade400,
+                      ),
+                      const SizedBox(width: 2),
+                      Expanded(
+                        child: Text(
+                          hash,
+                          style: GoogleFonts.sourceCodePro(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.grey.shade500,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: badgeBg,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                status,
+                style: GoogleFonts.inter(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: badgeText,
+                ),
+              ),
+            ),
+            const SizedBox(width: 4),
+            Icon(Icons.chevron_right, color: Colors.grey.shade400, size: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuickActionButton({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 6),
+          padding: const EdgeInsets.symmetric(vertical: 18),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: Colors.grey.shade100),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.02),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: color, size: 24),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                label,
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF4B5563),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _formatCurrency(double amount) {
+    final String raw = amount.toStringAsFixed(2);
+    final parts = raw.split('.');
+    final RegExp reg = RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))');
+    final String formattedInt = parts[0].replaceAllMapped(reg, (Match match) => '${match[1]},');
+    return '₱$formattedInt.${parts[1]}';
+  }
+
+  String _getHash(Document doc) {
+    final rawHash = doc.filePath.isNotEmpty && doc.filePath.length >= 8 
+        ? doc.filePath 
+        : 'hash_${doc.documentId}_${doc.documentTitle.hashCode.toRadixString(16)}';
+    if (rawHash.length > 8) {
+      return '${rawHash.substring(0, 4)}...${rawHash.substring(rawHash.length - 4)}';
+    }
+    return rawHash;
+  }
+
+  String _formatDate(DateTime date) {
+    return '${_getMonthName(date.month)} ${date.day}, ${date.year}';
+  }
+
+  Widget _buildOfficerHomeTab() {
+    final authProvider = Provider.of<AuthProvider>(context);
+    final user = authProvider.currentUser;
+    final String fullName = user != null ? '${user.firstName} ${user.lastName}' : 'Juan Santos';
+    final String initial = user != null && user.firstName.isNotEmpty ? user.firstName[0].toUpperCase() : 'J';
+    final String initial2 = user != null && user.lastName.isNotEmpty ? user.lastName[0].toUpperCase() : 'S';
+    final String initials = '$initial$initial2';
+
+    final docProvider = Provider.of<DocumentProvider>(context);
+    final docsList = docProvider.documents;
+    final stats = docProvider.stats;
+    final orgBudget = docProvider.organizationBudget;
+
+    // E-Wallet Dynamic Calculations from DB
+    final double spent = stats?.budget?.spent ?? 0.0;
+    final double remaining = stats?.budget?.remaining ?? 0.0;
+    final double totalBudget = stats?.budget?.total ?? 1.0; // avoid div by zero
+    final double spentPercent = totalBudget > 0 ? (spent / totalBudget) : 0.0;
+
+    // Security Metrics from DB
+    final double verifiedRatio = (stats?.complianceScore ?? 0) / 100.0;
+    final double indexedRatio = (stats?.transparencyIndex ?? 0) / 100.0;
+
+    final String orgName = orgBudget?.organization.orgName ?? 'Organization';
+    final String orgCode = orgBudget?.organization.orgCode ?? 'ORG';
+
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Elegant Header (custom dark theme, wallet feel)
+          Container(
+            width: double.infinity,
+            decoration: const BoxDecoration(
+              color: Color(0xFF0F172A), // Slate 900
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(32),
+                bottomRight: Radius.circular(32),
+              ),
+            ),
+            padding: EdgeInsets.only(
+              top: MediaQuery.of(context).padding.top + 20,
+              left: 24,
+              right: 24,
+              bottom: 32,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        // Glassmorphic status ring avatar
+                        Container(
+                          padding: const EdgeInsets.all(2),
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: LinearGradient(
+                              colors: [Color(0xFF3B48F6), Color(0xFF10B981)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                          ),
+                          child: CircleAvatar(
+                            radius: 22,
+                            backgroundColor: const Color(0xFF1E293B),
+                            child: Text(
+                              initials,
+                              style: GoogleFonts.inter(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '${_getGreeting()}, Officer',
+                              style: GoogleFonts.inter(
+                                fontSize: 12,
+                                color: Colors.slate.shade400,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              fullName,
+                              style: GoogleFonts.inter(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    // Notification Icon with pulsing dot
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const NotificationsPage(),
+                          ),
+                        );
+                      },
+                      child: Stack(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.06),
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white.withValues(alpha: 0.1), width: 1),
+                            ),
+                            child: const Icon(Icons.notifications_none, color: Colors.white, size: 22),
+                          ),
+                          Positioned(
+                            right: 2,
+                            top: 2,
+                            child: Container(
+                              width: 10,
+                              height: 10,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFEF4444),
+                                shape: BoxShape.circle,
+                                border: Border.all(color: const Color(0xFF0F172A), width: 1.5),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 28),
+
+                // E-Wallet Balance Card
+                Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF3B48F6), Color(0xFF6366F1), Color(0xFF4F46E5)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF3B48F6).withValues(alpha: 0.3),
+                        blurRadius: 20,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            '$orgName Wallet',
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              color: Colors.white.withValues(alpha: 0.8),
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          // Premium Gold Chip
+                          Container(
+                            width: 36,
+                            height: 26,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFD700).withValues(alpha: 0.85),
+                              borderRadius: BorderRadius.circular(6),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.1),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Stack(
+                              children: [
+                                Positioned(
+                                  top: 6,
+                                  left: 6,
+                                  child: Container(
+                                    width: 24,
+                                    height: 14,
+                                    decoration: BoxDecoration(
+                                      border: Border.all(color: Colors.orange.shade700.withValues(alpha: 0.4), width: 0.5),
+                                      borderRadius: BorderRadius.circular(2),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Available Allocation',
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          color: Colors.white70,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _formatCurrency(remaining),
+                        style: GoogleFonts.inter(
+                          fontSize: 34,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      // Spent details and progress bar
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Spent: ${_formatCurrency(spent)}',
+                                style: GoogleFonts.inter(
+                                  fontSize: 11,
+                                  color: Colors.white.withValues(alpha: 0.8),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              Text(
+                                '${(spentPercent * 100).toInt()}%',
+                                style: GoogleFonts.inter(
+                                  fontSize: 11,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(4),
+                            child: LinearProgressIndicator(
+                              value: spentPercent.clamp(0.0, 1.0),
+                              minHeight: 5,
+                              backgroundColor: Colors.white.withValues(alpha: 0.15),
+                              valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+                      // Card quick actions row (glassmorphic style)
+                      Row(
+                        children: [
+                          _buildCardAction(Icons.arrow_upward, 'Disburse', () {
+                            _showUploadBottomSheet(context);
+                          }),
+                          const SizedBox(width: 10),
+                          _buildCardAction(Icons.arrow_downward, 'Request', () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Budget request form is being prepared.')),
+                            );
+                          }),
+                          const SizedBox(width: 10),
+                          _buildCardAction(Icons.history, 'History', () {
+                            setState(() {
+                              _selectedIndex = 1; // Switch to Documents Tab
+                            });
+                          }),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Home Body
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Quick Actions Section
+                Text(
+                  'Quick Actions',
+                  style: GoogleFonts.inter(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF1F2937),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _buildQuickActionButton(
+                      icon: Icons.cloud_upload_outlined,
+                      label: 'Upload Doc',
+                      color: const Color(0xFF3B82F6), // Blue
+                      onTap: () => _showUploadBottomSheet(context),
+                    ),
+                    _buildQuickActionButton(
+                      icon: Icons.search_outlined,
+                      label: 'Search',
+                      color: const Color(0xFF8B5CF6), // Purple
+                      onTap: () {
+                        setState(() {
+                          _selectedIndex = 1; // Switch to Documents Tab
+                        });
+                      },
+                    ),
+                    _buildQuickActionButton(
+                      icon: Icons.analytics_outlined,
+                      label: 'Reports',
+                      color: const Color(0xFF10B981), // Green
+                      onTap: () {
+                        setState(() {
+                          _selectedIndex = 2; // Switch to Reports Tab
+                        });
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 32),
+
+                // Organization AI Analysis Banner
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50.withValues(alpha: 0.6),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.blue.shade100, width: 1),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.auto_awesome, color: Colors.blue.shade600, size: 18),
+                          const SizedBox(width: 8),
+                          Text(
+                            '$orgName AI Analysis',
+                            style: GoogleFonts.inter(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.blue.shade800,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        docsList.isEmpty
+                            ? 'No financial records in DB. Please upload a report to initialize AI transparency score.'
+                            : 'All $orgName database documents analyzed. Verified ${docsList.where((d) => d.statusName?.toUpperCase() == "APPROVED").length} approved files. Mismatches details shown in Reports.',
+                        style: GoogleFonts.inter(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.blue.shade900.withValues(alpha: 0.8),
+                          height: 1.45,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _selectedIndex = 2; // Open reports/analysis
+                          });
+                        },
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'View Full Report',
+                              style: GoogleFonts.inter(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.blue.shade700,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Icon(Icons.arrow_forward, color: Colors.blue.shade700, size: 14),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 32),
+
+                // Recent Documents Header
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      'Recent Documents',
+                      style: GoogleFonts.inter(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFF1F2937),
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _selectedIndex = 1; // Switch to Documents Tab
+                        });
+                      },
+                      child: Text(
+                        'View All',
+                        style: GoogleFonts.inter(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF3B48F6),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                // Documents List with Statuses (From DB)
+                if (docsList.isEmpty) ...[
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 40),
+                    alignment: Alignment.center,
+                    child: Column(
+                      children: [
+                        Icon(Icons.folder_open_outlined, size: 48, color: Colors.grey.shade300),
+                        const SizedBox(height: 12),
+                        Text(
+                          'No documents in database yet',
+                          style: GoogleFonts.inter(
+                            fontSize: 13,
+                            color: Colors.grey.shade400,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ] else ...[
+                  ...docsList.take(4).map((doc) => _buildOfficerDocumentCard(
+                    title: doc.documentTitle,
+                    date: _formatDate(doc.submissionDate),
+                    hash: _getHash(doc),
+                    status: doc.statusName ?? 'PENDING',
+                  )),
+                ],
+                const SizedBox(height: 32),
+
+                // Data Integrity Status (Redesigned with card border and progress indicators)
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.grey.shade100),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.02),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.shield_outlined, color: Colors.blue.shade600, size: 20),
+                          const SizedBox(width: 10),
+                          Text(
+                            'Data Integrity Status',
+                            style: GoogleFonts.inter(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: const Color(0xFF1F2937),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      'SHA-256 Verified',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                        color: Colors.grey.shade600,
+                                      ),
+                                    ),
+                                    Text(
+                                      '${(verifiedRatio * 100).toInt()}%',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.blue.shade600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(2),
+                                  child: LinearProgressIndicator(
+                                    value: verifiedRatio.clamp(0.0, 1.0),
+                                    minHeight: 4,
+                                    backgroundColor: Colors.grey.shade100,
+                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.blue.shade600),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 20),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      'Audit Indexed',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                        color: Colors.grey.shade600,
+                                      ),
+                                    ),
+                                    Text(
+                                      '${(indexedRatio * 100).toInt()}%',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.blue.shade600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(2),
+                                  child: LinearProgressIndicator(
+                                    value: indexedRatio.clamp(0.0, 1.0),
+                                    minHeight: 4,
+                                    backgroundColor: Colors.grey.shade100,
+                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.blue.shade600),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildSummaryHeaderCard(IconData icon, String amount, String label) {
     return Expanded(
       child: Container(
@@ -580,6 +1636,13 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Widget _buildReportsTab() {
+    final docProvider = Provider.of<DocumentProvider>(context);
+    final stats = docProvider.stats;
+
+    final double total = stats?.budget?.total ?? 150000.0;
+    final double spent = stats?.budget?.spent ?? 87500.0;
+    final double remaining = stats?.budget?.remaining ?? 62500.0;
+
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -588,11 +1651,11 @@ class _DashboardPageState extends State<DashboardPage> {
             roundedBottom: false,
             bottomContent: Row(
               children: [
-                _buildSummaryHeaderCard(Icons.account_balance_wallet_outlined, 'P150,000', 'Total Budget'),
+                _buildSummaryHeaderCard(Icons.account_balance_wallet_outlined, _formatCurrency(total), 'Total Budget'),
                 const SizedBox(width: 8),
-                _buildSummaryHeaderCard(Icons.receipt_long_outlined, 'P87,500', 'Total Expenses'),
+                _buildSummaryHeaderCard(Icons.receipt_long_outlined, _formatCurrency(spent), 'Total Expenses'),
                 const SizedBox(width: 8),
-                _buildSummaryHeaderCard(Icons.savings_outlined, 'P62,500', 'Remaining Funds'),
+                _buildSummaryHeaderCard(Icons.savings_outlined, _formatCurrency(remaining), 'Remaining Funds'),
               ],
             ),
           ),
@@ -1307,6 +2370,23 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Widget _buildProfileTab() {
+    final authProvider = Provider.of<AuthProvider>(context);
+    final user = authProvider.currentUser;
+    final String fullName = user != null ? '${user.firstName} ${user.lastName}' : 'Juan Dela Cruz Santos';
+    final String email = user?.email ?? 'juan.santos@iskolarngbayan.pup.edu.ph';
+    
+    final String initial = user != null && user.firstName.isNotEmpty ? user.firstName[0].toUpperCase() : 'J';
+    final String initial2 = user != null && user.lastName.isNotEmpty ? user.lastName[0].toUpperCase() : 'S';
+    final String initials = '$initial$initial2';
+
+    final int activeRoleId = _overrideRoleId ?? user?.roleId ?? 2;
+    final String roleName = _getRoleName(activeRoleId);
+    final bool isOfficer = activeRoleId == 3 || activeRoleId == 1;
+
+    final docProvider = Provider.of<DocumentProvider>(context);
+    final orgBudget = docProvider.organizationBudget;
+    final String orgName = orgBudget?.organization.orgName ?? (isOfficer ? 'COSC Society' : 'ISITE');
+
     return Column(
       children: [
         _buildHeader(roundedBottom: false),
@@ -1330,7 +2410,7 @@ class _DashboardPageState extends State<DashboardPage> {
                   ),
                   child: Center(
                     child: Text(
-                      'JS',
+                      initials,
                       style: GoogleFonts.inter(
                         fontSize: 32,
                         fontWeight: FontWeight.bold,
@@ -1343,7 +2423,7 @@ class _DashboardPageState extends State<DashboardPage> {
                 
                 // Name and Email
                 Text(
-                  'Juan Dela Cruz Santos',
+                  fullName,
                   style: GoogleFonts.inter(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -1352,7 +2432,7 @@ class _DashboardPageState extends State<DashboardPage> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'juan.santos@iskolarngbayan.pup.edu.ph',
+                  email,
                   style: GoogleFonts.inter(
                     fontSize: 13,
                     color: Colors.grey.shade500,
@@ -1364,14 +2444,18 @@ class _DashboardPageState extends State<DashboardPage> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.shield_outlined, color: Colors.blue.shade600, size: 16),
+                    Icon(
+                      isOfficer ? Icons.verified_user : Icons.shield_outlined, 
+                      color: isOfficer ? const Color(0xFF10B981) : Colors.blue.shade600, 
+                      size: 16
+                    ),
                     const SizedBox(width: 4),
                     Text(
-                      'Authorized Member',
+                      isOfficer ? 'Authorized Officer' : 'Authorized Member',
                       style: GoogleFonts.inter(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: Colors.blue.shade600,
+                        color: isOfficer ? const Color(0xFF10B981) : Colors.blue.shade600,
                       ),
                     ),
                   ],
@@ -1388,15 +2472,90 @@ class _DashboardPageState extends State<DashboardPage> {
                   ),
                   child: Column(
                     children: [
-                      _buildInfoRow('Student ID', '2023-00001-SM-0'),
+                      _buildInfoRow(roleName == 'Admin' ? 'Faculty ID' : 'Student ID', user?.studentId ?? '2023-00001-SM-0'),
                       Divider(color: Colors.grey.shade100, height: 1),
-                      _buildInfoRow('Organization', 'ISITE'),
+                      _buildInfoRow('Organization', orgName),
                       Divider(color: Colors.grey.shade100, height: 1),
                       _buildInfoRow('Campus', 'PUP Sta. Maria, Bulacan'),
                       Divider(color: Colors.grey.shade100, height: 1),
-                      _buildInfoRow('Role', 'Student'),
+                      _buildInfoRow('Role', roleName),
                       Divider(color: Colors.grey.shade100, height: 1),
-                      _buildInfoRow('Member Since', 'September 2023'),
+                      _buildInfoRow('Member Since', user != null ? '${_getMonthName(user.createdAt.month)} ${user.createdAt.year}' : 'September 2023'),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // Developer Switcher
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.shade50,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.amber.shade200),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.bug_report_outlined, color: Colors.amber.shade800),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Developer Tools',
+                            style: GoogleFonts.inter(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.amber.shade900,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Override dashboard role layout for presentation and verification purposes:',
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          color: Colors.amber.shade800,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              'Active UI: ${isOfficer ? "Officer (E-Wallet)" : "Student (Standard)"}',
+                              style: GoogleFonts.inter(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.amber.shade900,
+                              ),
+                            ),
+                          ),
+                          ElevatedButton(
+                            onPressed: () {
+                              setState(() {
+                                if (isOfficer) {
+                                  _overrideRoleId = 2; // Switch to Student
+                                  _selectedIndex = 0; // Reset index to Home
+                                } else {
+                                  _overrideRoleId = 3; // Switch to Officer
+                                  _selectedIndex = 0; // Reset index to Home
+                                }
+                              });
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.amber.shade800,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              textStyle: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold),
+                              elevation: 0,
+                            ),
+                            child: const Text('Toggle Role UI'),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                 ),
@@ -1415,6 +2574,7 @@ class _DashboardPageState extends State<DashboardPage> {
                 const SizedBox(height: 16),
                 GestureDetector(
                   onTap: () {
+                    Provider.of<AuthProvider>(context, listen: false).signOut();
                     Navigator.pushAndRemoveUntil(
                       context,
                       MaterialPageRoute(builder: (context) => const AuthPage()),
@@ -1433,8 +2593,65 @@ class _DashboardPageState extends State<DashboardPage> {
 
   @override
   Widget build(BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context);
+    final user = authProvider.currentUser;
+    final int activeRoleId = _overrideRoleId ?? user?.roleId ?? 2;
+    final bool isOfficer = activeRoleId == 3 || activeRoleId == 1;
+
+    Widget activeBody;
+    if (isOfficer) {
+      switch (_selectedIndex) {
+        case 0:
+          activeBody = _buildOfficerHomeTab();
+          break;
+        case 1:
+          activeBody = _buildDocumentsTab();
+          break;
+        case 3:
+          activeBody = _buildReportsTab();
+          break;
+        case 4:
+          activeBody = _buildProfileTab();
+          break;
+        default:
+          activeBody = _buildOfficerHomeTab();
+      }
+    } else {
+      switch (_selectedIndex) {
+        case 0:
+          activeBody = _buildHomeTab();
+          break;
+        case 1:
+          activeBody = _buildDocumentsTab();
+          break;
+        case 2:
+          activeBody = _buildReportsTab();
+          break;
+        case 3:
+          activeBody = _buildAnnouncementsTab();
+          break;
+        case 4:
+          activeBody = _buildProfileTab();
+          break;
+        default:
+          activeBody = _buildHomeTab();
+      }
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFFFAFAFA),
+      floatingActionButton: isOfficer
+          ? FloatingActionButton(
+              onPressed: () => _showUploadBottomSheet(context),
+              backgroundColor: const Color(0xFF3B48F6),
+              elevation: 4,
+              shape: const CircleBorder(),
+              child: const Icon(Icons.add, color: Colors.white, size: 28),
+            )
+          : null,
+      floatingActionButtonLocation: isOfficer
+          ? FloatingActionButtonLocation.centerDocked
+          : null,
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           boxShadow: [
@@ -1448,6 +2665,10 @@ class _DashboardPageState extends State<DashboardPage> {
         child: BottomNavigationBar(
           currentIndex: _selectedIndex,
           onTap: (index) {
+            if (isOfficer && index == 2) {
+              _showUploadBottomSheet(context);
+              return;
+            }
             setState(() {
               _selectedIndex = index;
             });
@@ -1459,31 +2680,27 @@ class _DashboardPageState extends State<DashboardPage> {
           selectedLabelStyle: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600),
           unselectedLabelStyle: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w500),
           elevation: 0,
-          items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.home_outlined), activeIcon: Icon(Icons.home), label: 'Home'),
-            BottomNavigationBarItem(icon: Icon(Icons.description_outlined), activeIcon: Icon(Icons.description), label: 'Documents'),
-            BottomNavigationBarItem(icon: Icon(Icons.bar_chart_outlined), activeIcon: Icon(Icons.bar_chart), label: 'Reports'),
-            BottomNavigationBarItem(icon: Icon(Icons.campaign_outlined), activeIcon: Icon(Icons.campaign), label: 'Announcements'),
-            BottomNavigationBarItem(icon: Icon(Icons.person_outline), activeIcon: Icon(Icons.person), label: 'Profile'),
-          ],
+          items: isOfficer
+              ? const [
+                  BottomNavigationBarItem(icon: Icon(Icons.home_outlined), activeIcon: Icon(Icons.home), label: 'Home'),
+                  BottomNavigationBarItem(icon: Icon(Icons.description_outlined), activeIcon: Icon(Icons.description), label: 'Documents'),
+                  BottomNavigationBarItem(
+                    icon: SizedBox(height: 20, child: Icon(Icons.add, color: Colors.transparent)), 
+                    label: '',
+                  ), // FAB space
+                  BottomNavigationBarItem(icon: Icon(Icons.bar_chart_outlined), activeIcon: Icon(Icons.bar_chart), label: 'Reports'),
+                  BottomNavigationBarItem(icon: Icon(Icons.person_outline), activeIcon: Icon(Icons.person), label: 'Profile'),
+                ]
+              : const [
+                  BottomNavigationBarItem(icon: Icon(Icons.home_outlined), activeIcon: Icon(Icons.home), label: 'Home'),
+                  BottomNavigationBarItem(icon: Icon(Icons.description_outlined), activeIcon: Icon(Icons.description), label: 'Documents'),
+                  BottomNavigationBarItem(icon: Icon(Icons.bar_chart_outlined), activeIcon: Icon(Icons.bar_chart), label: 'Reports'),
+                  BottomNavigationBarItem(icon: Icon(Icons.campaign_outlined), activeIcon: Icon(Icons.campaign), label: 'Announcements'),
+                  BottomNavigationBarItem(icon: Icon(Icons.person_outline), activeIcon: Icon(Icons.person), label: 'Profile'),
+                ],
         ),
       ),
-      body: _selectedIndex == 0 
-          ? _buildHomeTab() 
-          : _selectedIndex == 1 
-              ? _buildDocumentsTab() 
-              : _selectedIndex == 2 
-                  ? _buildReportsTab() 
-                  : _selectedIndex == 3
-                      ? _buildAnnouncementsTab()
-                      : _selectedIndex == 4
-                          ? _buildProfileTab()
-                          : Center(
-                              child: Text(
-                                'Coming Soon',
-                                style: GoogleFonts.inter(fontSize: 18, color: Colors.grey),
-                              ),
-                            ),
+      body: activeBody,
     );
   }
 }

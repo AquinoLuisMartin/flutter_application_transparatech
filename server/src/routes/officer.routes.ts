@@ -1,15 +1,71 @@
 import express from 'express';
 import { db } from '../db/index.js';
-import { documents, documentStatuses, accounts } from '../db/schema.js';
+import { documents, documentStatuses, accounts, organizations, budgets } from '../db/schema.js';
 import { eq, desc, sql, and, like, or } from 'drizzle-orm';
 import { verifyToken } from '../middleware/auth.middleware.js';
 
 const router = express.Router();
 
+// GET /api/officer/organization - Get organization and budget info
+router.get('/organization', verifyToken, async (req: any, res) => {
+  try {
+    const accountId = req.user.accountId;
+
+    // Get user's organization
+    const user = await db
+      .select({
+        organizationId: accounts.organizationId,
+      })
+      .from(accounts)
+      .where(eq(accounts.accountId, accountId))
+      .limit(1);
+
+    const organizationId = user[0]?.organizationId;
+
+    if (!organizationId) {
+      return res.status(404).json({ error: 'User is not assigned to any organization' });
+    }
+
+    // Get organization details
+    const org = await db
+      .select()
+      .from(organizations)
+      .where(eq(organizations.organizationId, organizationId))
+      .limit(1);
+
+    // Get budget details
+    const budget = await db
+      .select()
+      .from(budgets)
+      .where(eq(budgets.organizationId, organizationId))
+      .orderBy(desc(budgets.academicYear))
+      .limit(1);
+
+    res.json({
+      organization: org[0],
+      budget: budget[0]
+    });
+  } catch (error) {
+    console.error('Error fetching officer organization:', error);
+    res.status(500).json({ error: 'Failed to fetch organization data' });
+  }
+});
+
 // GET /api/officer/stats - Get dashboard statistics
 router.get('/stats', verifyToken, async (req: any, res) => {
   try {
     const accountId = req.user.accountId;
+
+    // Get user's organization for budget calculations
+    const user = await db
+      .select({
+        organizationId: accounts.organizationId,
+      })
+      .from(accounts)
+      .where(eq(accounts.accountId, accountId))
+      .limit(1);
+    
+    const organizationId = user[0]?.organizationId;
 
     // Get document counts by status
     const stats = await db
@@ -36,14 +92,37 @@ router.get('/stats', verifyToken, async (req: any, res) => {
       ? Math.round((approvedCount / totalActive) * 100) 
       : 0;
 
-    // Transparency index: Mock calculation based on activity
-    const transparencyIndex = totalActive > 0 ? Math.min(70 + (totalActive * 2), 98) : 0;
+    // Transparency index: Logic based on verified documents and metadata completeness
+    // For now, let's use a slightly more realistic formula
+    const transparencyIndex = totalActive > 0 
+      ? Math.min(60 + (approvedCount * 5), 100) 
+      : 0;
+
+    // Get budget summary if organization exists
+    let budgetSummary = null;
+    if (organizationId) {
+      const budget = await db
+        .select()
+        .from(budgets)
+        .where(eq(budgets.organizationId, organizationId))
+        .orderBy(desc(budgets.academicYear))
+        .limit(1);
+      
+      if (budget.length > 0) {
+        budgetSummary = {
+          total: budget[0].totalBudget / 100, // Convert cents to whole units
+          spent: budget[0].spentAmount / 100,
+          remaining: budget[0].remainingAmount / 100,
+        };
+      }
+    }
 
     res.json({
       byStatus: stats,
       totalActive,
       complianceScore,
-      transparencyIndex
+      transparencyIndex,
+      budget: budgetSummary
     });
   } catch (error) {
     console.error('Error fetching officer stats:', error);

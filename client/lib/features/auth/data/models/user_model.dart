@@ -9,6 +9,7 @@ class User {
   final String? profilePictureUrl;
   final String? dateOfBirth;
   final int roleId;
+  final int? organizationId;
   final bool isActive;
   final bool isVerified;
   final DateTime? lastLogin;
@@ -26,6 +27,7 @@ class User {
     this.profilePictureUrl,
     this.dateOfBirth,
     required this.roleId,
+    this.organizationId,
     required this.isActive,
     required this.isVerified,
     this.lastLogin,
@@ -45,6 +47,7 @@ class User {
       profilePictureUrl: json['profilePictureUrl'],
       dateOfBirth: json['dateOfBirth'],
       roleId: json['roleId'] ?? 0,
+      organizationId: json['organizationId'],
       isActive: json['isActive'] == 1 || json['isActive'] == true,
       isVerified: json['isVerified'] == 1 || json['isVerified'] == true,
       lastLogin: json['lastLogin'] != null ? DateTime.parse(json['lastLogin']) : null,
@@ -65,6 +68,7 @@ class User {
       'profilePictureUrl': profilePictureUrl,
       'dateOfBirth': dateOfBirth,
       'roleId': roleId,
+      'organizationId': organizationId,
       'isActive': isActive ? 1 : 0,
       'isVerified': isVerified ? 1 : 0,
       'lastLogin': lastLogin?.toIso8601String(),
