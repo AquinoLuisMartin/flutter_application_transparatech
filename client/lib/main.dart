@@ -1,19 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'features/landing/presentation/pages/landing_page.dart';
-import 'features/auth/presentation/pages/auth_page.dart';
-import 'core/utils/logger.dart';
-import 'core/config/build_config.dart';
+import 'package:provider/provider.dart';
+import 'package:flutter_application_transparatech/features/landing/presentation/pages/landing_page.dart';
+import 'package:flutter_application_transparatech/features/auth/presentation/pages/auth_page.dart';
+import 'package:flutter_application_transparatech/features/auth/presentation/providers/auth_provider.dart';
+import 'package:flutter_application_transparatech/features/officer/presentation/providers/officer_provider.dart';
+import 'package:flutter_application_transparatech/features/document_analysis/presentation/providers/document_provider.dart';
+import 'package:flutter_application_transparatech/core/utils/logger.dart';
+import 'package:flutter_application_transparatech/core/config/build_config.dart';
 
 void main() {
   // Initialize logger and logging
   AppLogger.info('Starting Verifi Application', tag: 'main');
   AppLogger.info('Build Environment: ${BuildConfig.environment.name}', tag: 'main');
   
-  // TODO: Initialize dependency injection container
-  // await setupServiceLocator();
-  
-  runApp(const MyApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => OfficerProvider()),
+        ChangeNotifierProvider(create: (_) => DocumentProvider()),
+      ],
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {

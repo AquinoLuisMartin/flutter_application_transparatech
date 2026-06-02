@@ -3,9 +3,10 @@
 /// API client and network configuration for the application
 library;
 
-// TODO: Add http package to pubspec.yaml if not already present
-// import 'package:http/http.dart' as http;
-
+import 'dart:convert';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 import '../constants/app_constants.dart';
 
 abstract class HttpClient {
@@ -61,13 +62,42 @@ class HttpResponse {
 class ApiClient implements HttpClient {
   final String baseUrl;
   final Duration timeout;
+  final http.Client _client = http.Client();
 
+  // Use 10.0.2.2 for Android emulator, 127.0.0.1 for iOS simulator and web
   ApiClient({
     String? baseUrl,
     Duration? timeout,
-  })  : baseUrl = baseUrl ?? AppConstants.apiBaseUrl,
+  })  : baseUrl = baseUrl ?? _getDefaultBaseUrl(),
         timeout = timeout ??
             Duration(seconds: AppConstants.apiTimeoutSeconds);
+
+  static String _getDefaultBaseUrl() {
+    if (kIsWeb) {
+      return 'http://localhost:3000';
+    }
+    
+    try {
+      if (Platform.isAndroid) {
+        return 'http://10.0.2.2:3000';
+      } else {
+        return 'http://localhost:3000';
+      }
+    } catch (e) {
+      return 'http://localhost:3000';
+    }
+  }
+
+  Map<String, String> _buildHeaders(Map<String, String>? extraHeaders) {
+    var headers = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    };
+    if (extraHeaders != null) {
+      headers.addAll(extraHeaders);
+    }
+    return headers;
+  }
 
   @override
   Future<HttpResponse> get(
@@ -75,9 +105,25 @@ class ApiClient implements HttpClient {
     Map<String, String>? headers,
     Duration? timeout,
   }) async {
-    throw UnimplementedError(
-      'HTTP client not configured. Add http package to pubspec.yaml',
-    );
+    final uri = Uri.parse('$baseUrl$endpoint');
+    try {
+      final response = await _client.get(
+        uri,
+        headers: _buildHeaders(headers),
+      ).timeout(timeout ?? this.timeout);
+      
+      return HttpResponse(
+        statusCode: response.statusCode,
+        data: response.body.isNotEmpty ? json.decode(response.body) : null,
+        headers: response.headers,
+      );
+    } catch (e) {
+      return HttpResponse(
+        statusCode: 500,
+        data: {'error': e.toString()},
+        headers: {},
+      );
+    }
   }
 
   @override
@@ -87,9 +133,26 @@ class ApiClient implements HttpClient {
     Map<String, String>? headers,
     Duration? timeout,
   }) async {
-    throw UnimplementedError(
-      'HTTP client not configured. Add http package to pubspec.yaml',
-    );
+    final uri = Uri.parse('$baseUrl$endpoint');
+    try {
+      final response = await _client.post(
+        uri,
+        headers: _buildHeaders(headers),
+        body: json.encode(body),
+      ).timeout(timeout ?? this.timeout);
+      
+      return HttpResponse(
+        statusCode: response.statusCode,
+        data: response.body.isNotEmpty ? json.decode(response.body) : null,
+        headers: response.headers,
+      );
+    } catch (e) {
+      return HttpResponse(
+        statusCode: 500,
+        data: {'error': e.toString()},
+        headers: {},
+      );
+    }
   }
 
   @override
@@ -99,9 +162,26 @@ class ApiClient implements HttpClient {
     Map<String, String>? headers,
     Duration? timeout,
   }) async {
-    throw UnimplementedError(
-      'HTTP client not configured. Add http package to pubspec.yaml',
-    );
+    final uri = Uri.parse('$baseUrl$endpoint');
+    try {
+      final response = await _client.put(
+        uri,
+        headers: _buildHeaders(headers),
+        body: json.encode(body),
+      ).timeout(timeout ?? this.timeout);
+      
+      return HttpResponse(
+        statusCode: response.statusCode,
+        data: response.body.isNotEmpty ? json.decode(response.body) : null,
+        headers: response.headers,
+      );
+    } catch (e) {
+      return HttpResponse(
+        statusCode: 500,
+        data: {'error': e.toString()},
+        headers: {},
+      );
+    }
   }
 
   @override
@@ -110,25 +190,25 @@ class ApiClient implements HttpClient {
     Map<String, String>? headers,
     Duration? timeout,
   }) async {
-    throw UnimplementedError(
-      'HTTP client not configured. Add http package to pubspec.yaml',
-    );
-  }
-
-  // ignore: unused_element
-  String _buildUrl(String endpoint) {
-    if (endpoint.startsWith('http')) {
-      return endpoint;
+    final uri = Uri.parse('$baseUrl$endpoint');
+    try {
+      final response = await _client.delete(
+        uri,
+        headers: _buildHeaders(headers),
+      ).timeout(timeout ?? this.timeout);
+      
+      return HttpResponse(
+        statusCode: response.statusCode,
+        data: response.body.isNotEmpty ? json.decode(response.body) : null,
+        headers: response.headers,
+      );
+    } catch (e) {
+      return HttpResponse(
+        statusCode: 500,
+        data: {'error': e.toString()},
+        headers: {},
+      );
     }
-    return '$baseUrl$endpoint';
-  }
-
-  // ignore: unused_element
-  Map<String, String> _defaultHeaders() {
-    return {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-    };
   }
 }
 

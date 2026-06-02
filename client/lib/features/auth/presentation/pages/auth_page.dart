@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import 'package:flutter_application_transparatech/core/widgets/custom_text_form_field.dart';
 import 'package:flutter_application_transparatech/features/dashboard/presentation/pages/dashboard_page.dart';
+import 'package:flutter_application_transparatech/features/officer/presentation/pages/officer_dashboard_page.dart';
 import 'package:flutter_application_transparatech/features/auth/presentation/pages/sign_up_form_page.dart';
 import 'package:flutter_application_transparatech/features/auth/presentation/pages/forgot_password_page.dart';
+import 'package:flutter_application_transparatech/features/auth/presentation/providers/auth_provider.dart';
 
 class AuthPage extends StatefulWidget {
   const AuthPage({super.key});
@@ -53,6 +56,38 @@ class _AuthPageState extends State<AuthPage> {
     return null;
   }
 
+  Future<void> _handleLogin() async {
+    if (_formKey.currentState!.validate()) {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final success = await authProvider.signIn(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
+
+      if (success && mounted) {
+        final user = authProvider.currentUser;
+        Widget dashboard;
+        
+        if (user?.roleId == 3) { // Officer
+          dashboard = const OfficerDashboardPage();
+        } else {
+          dashboard = const DashboardPage();
+        }
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => dashboard,
+          ),
+        );
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(authProvider.errorMessage ?? 'Login failed')),
+        );
+      }
+    }
+  }
+
   @override
   void dispose() {
     _emailController.dispose();
@@ -88,6 +123,8 @@ class _AuthPageState extends State<AuthPage> {
 
   @override
   Widget build(BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context);
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -202,17 +239,7 @@ class _AuthPageState extends State<AuthPage> {
                     width: double.infinity,
                     height: 56,
                     child: ElevatedButton(
-                      onPressed: () {
-                        if (_formKey.currentState!.validate()) {
-                          // Simply navigate to dashboard for now
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const DashboardPage(),
-                            ),
-                          );
-                        }
-                      },
+                      onPressed: authProvider.isLoading ? null : _handleLogin,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF3B48F6),
                         foregroundColor: Colors.white,
@@ -221,13 +248,15 @@ class _AuthPageState extends State<AuthPage> {
                         ),
                         elevation: 0,
                       ),
-                      child: Text(
-                        'Login',
-                        style: GoogleFonts.inter(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+                      child: authProvider.isLoading
+                          ? const CircularProgressIndicator(color: Colors.white)
+                          : Text(
+                              'Login',
+                              style: GoogleFonts.inter(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                     ),
                   ),
                   const SizedBox(height: 48),

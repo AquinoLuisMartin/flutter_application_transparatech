@@ -1,16 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_application_transparatech/core/network/http_client.dart';
+import 'package:flutter_application_transparatech/core/utils/logger.dart';
+import 'dart:convert';
 
 class AccountVerificationPage extends StatefulWidget {
   final String email;
   final String studentId;
   final String fullName;
+  final String token;
+  final String password;
 
   const AccountVerificationPage({
     super.key,
     required this.email,
     required this.studentId,
     required this.fullName,
+    required this.token,
+    required this.password,
   });
 
   @override
@@ -22,12 +29,47 @@ class _AccountVerificationPageState extends State<AccountVerificationPage> {
   late List<VerificationStep> _verificationSteps;
   bool _isVerificationComplete = false;
   int _completedSteps = 0;
+  bool _isCompleting = false;
 
   @override
   void initState() {
     super.initState();
     _initializeVerificationSteps();
     _startVerification();
+  }
+
+  Future<void> _handleCompleteSetup() async {
+    if (_isCompleting) return;
+
+    setState(() => _isCompleting = true);
+
+    try {
+      // Final verification - store full name (this would typically be done in your backend)
+      AppLogger.info('Account setup complete: ${widget.fullName}', tag: 'Verification');
+      
+      // Navigate to login page
+      if (mounted) {
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          '/login',
+          (route) => false,
+        );
+      }
+    } catch (e) {
+      AppLogger.error('Error completing setup: $e', tag: 'Verification');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isCompleting = false);
+      }
+    }
   }
 
   void _initializeVerificationSteps() {
@@ -299,15 +341,8 @@ class _AccountVerificationPageState extends State<AccountVerificationPage> {
               width: double.infinity,
               height: 56,
               child: ElevatedButton(
-                onPressed: _isVerificationComplete
-                    ? () {
-                        // Navigate to login page
-                        Navigator.pushNamedAndRemoveUntil(
-                          context,
-                          '/login',
-                          (route) => false,
-                        );
-                      }
+                onPressed: (_isVerificationComplete && !_isCompleting)
+                    ? _handleCompleteSetup
                     : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: _isVerificationComplete
@@ -322,16 +357,25 @@ class _AccountVerificationPageState extends State<AccountVerificationPage> {
                       : Colors.transparent,
                   disabledBackgroundColor: Colors.grey.shade300,
                 ),
-                child: Text(
-                  _isVerificationComplete ? 'Complete Setup' : 'Verifying...',
-                  style: GoogleFonts.inter(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: _isVerificationComplete
-                        ? Colors.white
-                        : Colors.grey.shade600,
-                  ),
-                ),
+                child: _isCompleting
+                    ? SizedBox(
+                        height: 24,
+                        width: 24,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      )
+                    : Text(
+                        _isVerificationComplete ? 'Complete Setup' : 'Verifying...',
+                        style: GoogleFonts.inter(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: _isVerificationComplete
+                              ? Colors.white
+                              : Colors.grey.shade600,
+                        ),
+                      ),
               ),
             ),
 

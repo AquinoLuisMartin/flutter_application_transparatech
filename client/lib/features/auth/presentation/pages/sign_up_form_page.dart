@@ -1,6 +1,10 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_application_transparatech/core/widgets/custom_text_form_field.dart';
+import 'package:flutter_application_transparatech/core/widgets/custom_dropdown_field.dart';
+import 'package:flutter_application_transparatech/core/network/http_client.dart';
+import 'package:flutter_application_transparatech/core/utils/logger.dart';
+import 'dart:convert';
 import 'profile_setup_page.dart';
 import 'auth_page.dart';
 
@@ -18,8 +22,10 @@ class _SignUpFormPageState extends State<SignUpFormPage> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   
+  String? _selectedRole = 'Student';
   bool _isEmailValid = false;
   bool _isStudentIdValid = false;
+  bool _isLoading = false;
   
   bool _hasEightChars = false;
   bool _hasUppercase = false;
@@ -55,14 +61,18 @@ class _SignUpFormPageState extends State<SignUpFormPage> {
   void _onEmailChanged(String value) {
     setState(() {
       final trimmedEmail = value.trim().toLowerCase();
-      final domain = '@iskolarngbayan.pup.edu.ph';
+      final domain = _selectedRole == 'Admin' ? '@pup.edu.ph' : '@iskolarngbayan.pup.edu.ph';
       _isEmailValid = trimmedEmail.endsWith(domain) && trimmedEmail.length > domain.length;
     });
   }
 
   void _onStudentIdChanged(String value) {
     setState(() {
-      _isStudentIdValid = RegExp(r'^\d{4}-\d{5}-SM-\d$').hasMatch(value);
+      if (_selectedRole == 'Admin') {
+        _isStudentIdValid = RegExp(r'^FA-\d{4}-SM-\d{4}$').hasMatch(value);
+      } else {
+        _isStudentIdValid = RegExp(r'^\d{4}-\d{5}-SM-\d$').hasMatch(value);
+      }
     });
   }
 
@@ -70,10 +80,10 @@ class _SignUpFormPageState extends State<SignUpFormPage> {
     if (value == null || value.isEmpty) return 'Email is required';
     
     final trimmedEmail = value.trim().toLowerCase();
-    const domain = '@iskolarngbayan.pup.edu.ph';
+    final domain = _selectedRole == 'Admin' ? '@pup.edu.ph' : '@iskolarngbayan.pup.edu.ph';
     
     if (!trimmedEmail.endsWith(domain)) {
-      return 'Must be a PUP webmail address (@iskolarngbayan.pup.edu.ph)';
+      return 'Must be a PUP address ($domain)';
     }
     
     if (trimmedEmail.length <= domain.length) {
@@ -84,9 +94,18 @@ class _SignUpFormPageState extends State<SignUpFormPage> {
   }
 
   String? _validateStudentId(String? value) {
-    if (value == null || value.isEmpty) return 'Student ID is required';
-    if (!RegExp(r'^\d{4}-\d{5}-SM-\d$').hasMatch(value)) {
-      return 'Format must be YYYY-NNNNN-SM-0';
+    if (value == null || value.isEmpty) {
+      return _selectedRole == 'Admin' ? 'Faculty Number is required' : 'Student ID is required';
+    }
+    
+    if (_selectedRole == 'Admin') {
+      if (!RegExp(r'^FA-\d{4}-SM-\d{4}$').hasMatch(value)) {
+        return 'Format must be FA-XXXX-SM-YYYY';
+      }
+    } else {
+      if (!RegExp(r'^\d{4}-\d{5}-SM-\d$').hasMatch(value)) {
+        return 'Format must be YYYY-NNNNN-SM-0';
+      }
     }
     return null;
   }
@@ -101,6 +120,70 @@ class _SignUpFormPageState extends State<SignUpFormPage> {
   String? _validateConfirmPassword(String? value) {
     if (value != _passwordController.text) return 'Passwords do not match';
     return null;
+  }
+
+  Future<void> _handleSignupContinue() async {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final client = ApiClient();
+      final response = await client.post(
+        '/api/auth/signup',
+        body: {
+          'email': _emailController.text.trim(),
+          'studentId': _studentIdController.text.trim(),
+          'password': _passwordController.text,
+          'role': _selectedRole,
+          'fullName': _emailController.text.split('@')[0], // Will be overridden in next step
+        },
+      );
+
+      if (!mounted) return;
+
+      if (response.isSuccess) {
+        final jsonResponse = response.data;
+        // Store the token (you'll need to set up secure storage)
+        AppLogger.info('Signup successful', tag: 'SignUp');
+        
+        // Navigate to Profile Setup (Step 2)
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ProfileSetupPage(
+              email: _emailController.text,
+              studentId: _studentIdController.text,
+              password: _passwordController.text,
+              token: jsonResponse['token'],
+            ),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(response.data['error'] ?? 'Signup failed'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      AppLogger.error('Signup error: $e', tag: 'SignUp');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   Widget _buildStepIndicator() {
@@ -151,12 +234,39 @@ class _SignUpFormPageState extends State<SignUpFormPage> {
     );
   }
 
+  double get _strengthScore {
+    int score = 0;
+    if (_passwordController.text.isEmpty) return 0.0;
+    if (_hasEightChars) score++;
+    if (_hasUppercase) score++;
+    if (_hasNumber) score++;
+    if (_hasSpecialChar) score++;
+    return score / 4.0;
+  }
+
+  String get _strengthText {
+    if (_passwordController.text.isEmpty) return '';
+    final score = _strengthScore;
+    if (score <= 0.25) return 'Weak';
+    if (score <= 0.5) return 'Fair';
+    if (score <= 0.75) return 'Good';
+    return 'Strong';
+  }
+
+  Color get _strengthColor {
+    final score = _strengthScore;
+    if (score <= 0.25) return Colors.red.shade400;
+    if (score <= 0.5) return Colors.orange.shade400;
+    if (score <= 0.75) return Colors.blue.shade400;
+    return Colors.green.shade400;
+  }
+
   Widget _buildReq(String text, bool isMet) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         Icon(
-          Icons.check,
+          isMet ? Icons.check_circle : Icons.circle_outlined,
           size: 14,
           color: isMet ? Colors.blue.shade500 : Colors.grey.shade400,
         ),
@@ -177,7 +287,42 @@ class _SignUpFormPageState extends State<SignUpFormPage> {
     return Padding(
       padding: const EdgeInsets.only(top: 8.0, bottom: 8.0),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (_passwordController.text.isNotEmpty) ...[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Password Strength',
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+                Text(
+                  _strengthText,
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: _strengthColor,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(2),
+              child: LinearProgressIndicator(
+                value: _strengthScore,
+                backgroundColor: Colors.grey.shade100,
+                valueColor: AlwaysStoppedAnimation<Color>(_strengthColor),
+                minHeight: 4,
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
           Row(
             children: [
               Expanded(child: _buildReq('At least 8 characters', _hasEightChars)),
@@ -253,7 +398,7 @@ class _SignUpFormPageState extends State<SignUpFormPage> {
 
               CustomTextFormField(
                 label: 'PUP Webmail Address *',
-                hintText: '...iskolarngbayan.pup.edu.ph',
+                hintText: _selectedRole == 'Admin' ? 'name@pup.edu.ph' : '...iskolarngbayan.pup.edu.ph',
                 inputType: TextInputType.emailAddress,
                 controller: _emailController,
                 prefixIcon: 'email',
@@ -263,14 +408,37 @@ class _SignUpFormPageState extends State<SignUpFormPage> {
               ),
               const SizedBox(height: 20),
 
+              CustomDropdownField<String>(
+                label: 'I am a *',
+                value: _selectedRole,
+                prefixIcon: 'role',
+                items: const [
+                  DropdownMenuItem(value: 'Student', child: Text('Student')),
+                  DropdownMenuItem(value: 'Officer', child: Text('Officer of the Organization')),
+                  DropdownMenuItem(value: 'Admin', child: Text('Admin')),
+                ],
+                onChanged: (value) {
+                  setState(() {
+                    _selectedRole = value;
+                    // Re-validate ID and Email when role changes
+                    _onStudentIdChanged(_studentIdController.text);
+                    _onEmailChanged(_emailController.text);
+                  });
+                },
+                validator: (value) => value == null ? 'Please select a role' : null,
+              ),
+              const SizedBox(height: 20),
+
               CustomTextFormField(
-                label: 'Student ID Number *',
-                hintText: '2023-00079-SM-0',
+                label: _selectedRole == 'Admin' ? 'Faculty Number *' : 'Student ID Number *',
+                hintText: _selectedRole == 'Admin' ? 'FA-1234-SM-2023' : '2023-00079-SM-0',
                 controller: _studentIdController,
                 prefixIcon: 'badge',
                 onChanged: _onStudentIdChanged,
                 isValid: _isStudentIdValid,
-                helperText: 'SM = Sta. Maria campus code',
+                helperText: _selectedRole == 'Admin' 
+                    ? 'FA = Faculty, SM = Sta. Maria' 
+                    : 'SM = Sta. Maria campus code',
                 validator: _validateStudentId,
               ),
               const SizedBox(height: 20),
@@ -307,37 +475,33 @@ class _SignUpFormPageState extends State<SignUpFormPage> {
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
-                  onPressed: () {
-                    if (_formKey.currentState!.validate()) {
-                      // Navigate to Profile Setup (Step 2)
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ProfileSetupPage(
-                            email: _emailController.text,
-                            studentId: _studentIdController.text,
-                            password: _passwordController.text,
-                          ),
-                        ),
-                      );
-                    }
-                  },
+                  onPressed: _isLoading ? null : _handleSignupContinue,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.blue.shade600,
+                    disabledBackgroundColor: Colors.grey.shade400,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                     elevation: 3,
                     shadowColor: Colors.blue.withValues(alpha: 0.3),
                   ),
-                  child: Text(
-                    'Continue to Profile Setup',
-                    style: GoogleFonts.inter(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
-                  ),
+                  child: _isLoading
+                      ? SizedBox(
+                          height: 24,
+                          width: 24,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : Text(
+                          'Continue to Profile Setup',
+                          style: GoogleFonts.inter(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
                 ),
               ),
               const SizedBox(height: 24),

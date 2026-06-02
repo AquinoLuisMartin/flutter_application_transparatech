@@ -9,12 +9,14 @@ class ProfileSetupPage extends StatefulWidget {
   final String email;
   final String studentId;
   final String password;
+  final String token;
 
   const ProfileSetupPage({
     super.key,
     required this.email,
     required this.studentId,
     required this.password,
+    required this.token,
   });
 
   @override
@@ -444,6 +446,8 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
                             email: widget.email,
                             studentId: widget.studentId,
                             fullName: _fullNameController.text,
+                            token: widget.token,
+                            password: widget.password,
                           ),
                         ),
                       );
