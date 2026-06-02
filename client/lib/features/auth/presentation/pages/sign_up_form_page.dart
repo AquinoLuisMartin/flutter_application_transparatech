@@ -414,7 +414,6 @@ class _SignUpFormPageState extends State<SignUpFormPage> {
                 prefixIcon: 'role',
                 items: const [
                   DropdownMenuItem(value: 'Student', child: Text('Student')),
-                  DropdownMenuItem(value: 'Officer', child: Text('Officer of the Organization')),
                   DropdownMenuItem(value: 'Admin', child: Text('Admin')),
                 ],
                 onChanged: (value) {

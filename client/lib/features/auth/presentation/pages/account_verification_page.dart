@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:flutter_application_transparatech/core/network/http_client.dart';
 import 'package:flutter_application_transparatech/core/utils/logger.dart';
-import 'dart:convert';
 
 class AccountVerificationPage extends StatefulWidget {
   final String email;

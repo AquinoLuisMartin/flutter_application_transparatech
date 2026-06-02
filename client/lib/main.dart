@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import 'package:flutter_application_transparatech/features/landing/presentation/pages/landing_page.dart';
 import 'package:flutter_application_transparatech/features/auth/presentation/pages/auth_page.dart';
 import 'package:flutter_application_transparatech/features/auth/presentation/providers/auth_provider.dart';
-import 'package:flutter_application_transparatech/features/officer/presentation/providers/officer_provider.dart';
 import 'package:flutter_application_transparatech/features/document_analysis/presentation/providers/document_provider.dart';
 import 'package:flutter_application_transparatech/core/utils/logger.dart';
 import 'package:flutter_application_transparatech/core/config/build_config.dart';
@@ -18,7 +17,6 @@ void main() {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
-        ChangeNotifierProvider(create: (_) => OfficerProvider()),
         ChangeNotifierProvider(create: (_) => DocumentProvider()),
       ],
       child: const MyApp(),

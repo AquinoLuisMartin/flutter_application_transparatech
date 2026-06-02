@@ -3,7 +3,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_application_transparatech/core/widgets/custom_text_form_field.dart';
 import 'package:flutter_application_transparatech/features/dashboard/presentation/pages/dashboard_page.dart';
-import 'package:flutter_application_transparatech/features/officer/presentation/pages/officer_dashboard_page.dart';
 import 'package:flutter_application_transparatech/features/auth/presentation/pages/sign_up_form_page.dart';
 import 'package:flutter_application_transparatech/features/auth/presentation/pages/forgot_password_page.dart';
 import 'package:flutter_application_transparatech/features/auth/presentation/providers/auth_provider.dart';
@@ -65,19 +64,10 @@ class _AuthPageState extends State<AuthPage> {
       );
 
       if (success && mounted) {
-        final user = authProvider.currentUser;
-        Widget dashboard;
-        
-        if (user?.roleId == 3) { // Officer
-          dashboard = const OfficerDashboardPage();
-        } else {
-          dashboard = const DashboardPage();
-        }
-
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => dashboard,
+            builder: (context) => const DashboardPage(),
           ),
         );
       } else if (mounted) {

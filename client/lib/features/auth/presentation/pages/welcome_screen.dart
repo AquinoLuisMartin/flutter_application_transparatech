@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'sign_up_form_page.dart';
 import 'auth_page.dart';
-import 'package:flutter_application_transparatech/features/officer/presentation/pages/officer_dashboard_page.dart';
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
@@ -144,31 +143,6 @@ class WelcomeScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  // Officer Portal Button
-                  SizedBox(
-                    width: double.infinity,
-                    height: 56,
-                    child: TextButton.icon(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const OfficerDashboardPage(),
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.shield_outlined, size: 20, color: Color(0xFF132A42)),
-                      label: Text(
-                        'Go to Officer Portal',
-                        style: GoogleFonts.inter(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: const Color(0xFF132A42),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
                   // Or continue with
                   Text(
                     'or continue with',
