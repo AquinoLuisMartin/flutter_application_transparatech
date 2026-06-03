@@ -3,6 +3,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_application_transparatech/features/auth/presentation/providers/auth_provider.dart';
 import 'package:flutter_application_transparatech/features/document_analysis/presentation/providers/document_provider.dart';
+import 'package:flutter_application_transparatech/features/document_analysis/data/models/document_model.dart';
+import 'package:flutter_application_transparatech/features/document_analysis/data/models/officer_stats_model.dart';
+import 'package:flutter_application_transparatech/features/document_analysis/data/models/organization_model.dart';
 import 'notifications_page.dart';
 import 'settings_page.dart';
 
@@ -1009,8 +1012,8 @@ class _DashboardPageState extends State<DashboardPage> {
 
     final docProvider = Provider.of<DocumentProvider>(context);
     final docsList = docProvider.documents;
-    final stats = docProvider.stats;
-    final orgBudget = docProvider.organizationBudget;
+    final OfficerStats? stats = docProvider.stats;
+    final OrganizationBudget? orgBudget = docProvider.organizationBudget;
 
     // E-Wallet Dynamic Calculations from DB
     final double spent = stats?.budget?.spent ?? 0.0;
@@ -1023,7 +1026,6 @@ class _DashboardPageState extends State<DashboardPage> {
     final double indexedRatio = (stats?.transparencyIndex ?? 0) / 100.0;
 
     final String orgName = orgBudget?.organization.orgName ?? 'Organization';
-    final String orgCode = orgBudget?.organization.orgCode ?? 'ORG';
 
     return SingleChildScrollView(
       child: Column(
@@ -1085,7 +1087,7 @@ class _DashboardPageState extends State<DashboardPage> {
                               '${_getGreeting()}, Officer',
                               style: GoogleFonts.inter(
                                 fontSize: 12,
-                                color: Colors.slate.shade400,
+                                color: const Color(0xFF94A3B8), // slate-400
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
