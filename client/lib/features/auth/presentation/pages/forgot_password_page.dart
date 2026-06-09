@@ -17,9 +17,8 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   void _onEmailChanged(String value) {
     setState(() {
       final trimmedEmail = value.trim().toLowerCase();
-      const domain = '@iskolarngbayan.pup.edu.ph';
-      _isEmailValid =
-          trimmedEmail.endsWith(domain) && trimmedEmail.length > domain.length;
+      const domain = '@pup.edu.ph';
+      _isEmailValid = trimmedEmail.endsWith(domain) && trimmedEmail.length > domain.length;
     });
   }
 
@@ -28,12 +27,9 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
       return 'Email is required';
     }
     final trimmedEmail = value.trim().toLowerCase();
-    const domain = '@iskolarngbayan.pup.edu.ph';
+    const domain = '@pup.edu.ph';
     if (!trimmedEmail.endsWith(domain)) {
-      return 'Must use @iskolarngbayan.pup.edu.ph email';
-    }
-    if (trimmedEmail.length <= domain.length) {
-      return 'Please enter a valid email address';
+      return 'Must use @pup.edu.ph email address';
     }
     return null;
   }
@@ -89,7 +85,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                   // Email Input
                   CustomTextFormField(
                     label: 'Email Address',
-                    hintText: 'username@iskolarngbayan.pup.edu.ph',
+                    hintText: 'username@pup.edu.ph',
                     inputType: TextInputType.emailAddress,
                     controller: _emailController,
                     onChanged: _onEmailChanged,

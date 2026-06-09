@@ -63,12 +63,12 @@ async function seed() {
     }
 
     // Seed a Test Officer Account
-    const existingOfficer = await db.select().from(accounts).where(eq(accounts.email, "officer@iskolarngbayan.pup.edu.ph")).limit(1);
+    const existingOfficer = await db.select().from(accounts).where(eq(accounts.email, "officer@pup.edu.ph")).limit(1);
     if (existingOfficer.length === 0 && officerRole && coscOrgId) {
       console.log("Seeding test officer account...");
       const hashedPassword = await authService.hashPassword("Password123!");
       await db.insert(accounts).values({
-        email: "officer@iskolarngbayan.pup.edu.ph",
+        email: "officer@pup.edu.ph",
         username: "officer_test",
         studentId: "2023-00001-SM-0",
         passwordHash: hashedPassword,
@@ -79,7 +79,27 @@ async function seed() {
         isActive: 1,
         isVerified: 1,
       }).run();
-      console.log("Test officer created: officer@iskolarngbayan.pup.edu.ph / Password123!");
+      console.log("Test officer created: officer@pup.edu.ph / Password123!");
+    }
+
+    // Seed a Test Admin Account
+    const existingAdmin = await db.select().from(accounts).where(eq(accounts.email, "admin@pup.edu.ph")).limit(1);
+    const adminRole = allRoles.find(r => r.roleName === "Admin");
+    if (existingAdmin.length === 0 && adminRole) {
+      console.log("Seeding test admin account...");
+      const hashedPassword = await authService.hashPassword("AdminPassword123!");
+      await db.insert(accounts).values({
+        email: "admin@pup.edu.ph",
+        username: "admin_test",
+        studentId: "FA-2023-SM-0001",
+        passwordHash: hashedPassword,
+        firstName: "System",
+        lastName: "Administrator",
+        roleId: adminRole.roleId,
+        isActive: 1,
+        isVerified: 1,
+      }).run();
+      console.log("Test admin created: admin@pup.edu.ph / AdminPassword123!");
     }
 
     console.log("Seeding completed successfully!");

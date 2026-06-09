@@ -8,6 +8,7 @@ import 'package:flutter_application_transparatech/features/document_analysis/dat
 import 'package:flutter_application_transparatech/features/document_analysis/data/models/organization_model.dart';
 import 'notifications_page.dart';
 import 'settings_page.dart';
+import 'package:flutter_application_transparatech/features/admin/presentation/pages/admin_dashboard_page.dart';
 
 import 'package:flutter_application_transparatech/features/auth/presentation/pages/auth_page.dart';
 
@@ -2375,7 +2376,7 @@ class _DashboardPageState extends State<DashboardPage> {
     final authProvider = Provider.of<AuthProvider>(context);
     final user = authProvider.currentUser;
     final String fullName = user != null ? '${user.firstName} ${user.lastName}' : 'Juan Dela Cruz Santos';
-    final String email = user?.email ?? 'juan.santos@iskolarngbayan.pup.edu.ph';
+    final String email = user?.email ?? 'juan.santos@pup.edu.ph';
     
     final String initial = user != null && user.firstName.isNotEmpty ? user.firstName[0].toUpperCase() : 'J';
     final String initial2 = user != null && user.lastName.isNotEmpty ? user.lastName[0].toUpperCase() : 'S';
@@ -2527,7 +2528,7 @@ class _DashboardPageState extends State<DashboardPage> {
                         children: [
                           Expanded(
                             child: Text(
-                              'Active UI: ${isOfficer ? "Officer (E-Wallet)" : "Student (Standard)"}',
+                              'Active UI: ${activeRoleId == 1 ? "Admin (System)" : isOfficer ? "Officer (E-Wallet)" : "Student (Standard)"}',
                               style: GoogleFonts.inter(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
@@ -2538,13 +2539,14 @@ class _DashboardPageState extends State<DashboardPage> {
                           ElevatedButton(
                             onPressed: () {
                               setState(() {
-                                if (isOfficer) {
-                                  _overrideRoleId = 2; // Switch to Student
-                                  _selectedIndex = 0; // Reset index to Home
-                                } else {
+                                if (activeRoleId == 2) {
                                   _overrideRoleId = 3; // Switch to Officer
-                                  _selectedIndex = 0; // Reset index to Home
+                                } else if (activeRoleId == 3) {
+                                  _overrideRoleId = 1; // Switch to Admin
+                                } else {
+                                  _overrideRoleId = 2; // Switch to Student
                                 }
+                                _selectedIndex = 0; // Reset index to Home
                               });
                             },
                             style: ElevatedButton.styleFrom(
@@ -2598,7 +2600,12 @@ class _DashboardPageState extends State<DashboardPage> {
     final authProvider = Provider.of<AuthProvider>(context);
     final user = authProvider.currentUser;
     final int activeRoleId = _overrideRoleId ?? user?.roleId ?? 2;
-    final bool isOfficer = activeRoleId == 3 || activeRoleId == 1;
+
+    if (activeRoleId == 1) {
+      return const AdminDashboardPage();
+    }
+
+    final bool isOfficer = activeRoleId == 3;
 
     Widget activeBody;
     if (isOfficer) {

@@ -74,7 +74,7 @@ export const accounts = sqliteTable("accounts", {
   idxCreatedAt: index("idx_acc_created_at").on(table.createdAt),
   checkIsActive: check("accounts_is_active_check", sql`${table.isActive} IN (0, 1)`),
   checkIsVerified: check("accounts_is_verified_check", sql`${table.isVerified} IN (0, 1)`),
-  checkEmailDomain: check("accounts_email_domain_check", sql`${table.email} LIKE '%@iskolarngbayan.pup.edu.ph' OR ${table.email} LIKE '%@pup.edu.ph'`),
+  checkEmailDomain: check("accounts_email_domain_check", sql`${table.email} LIKE '%@pup.edu.ph'`),
   checkStudentIdFormat: check("accounts_student_id_format_check", sql`${table.studentId} LIKE '____-_____-SM-_' OR ${table.studentId} LIKE 'FA-____-SM-____'`),
 }));
 
@@ -85,13 +85,16 @@ export const organizations = sqliteTable("organizations", {
   organizationId: integer("organization_id").primaryKey({ autoIncrement: true }),
   orgName: text("org_name").unique().notNull(),
   orgCode: text("org_code").unique().notNull(), // e.g. COSC, ISITE
+  orgEmail: text("org_email").unique(), // Added orgEmail field
   description: text("description"),
   logoUrl: text("logo_url"),
   isActive: integer("is_active").default(1).notNull(),
   createdAt: integer("created_at", { mode: "timestamp" }).default(sql`CURRENT_TIMESTAMP`).notNull(),
 }, (table) => ({
   idxOrgCode: index("idx_org_code").on(table.orgCode),
+  idxOrgEmail: index("idx_org_email").on(table.orgEmail),
   checkIsActive: check("organizations_is_active_check", sql`${table.isActive} IN (0, 1)`),
+  checkOrgEmailDomain: check("organizations_email_domain_check", sql`${table.orgEmail} IS NULL OR ${table.orgEmail} LIKE '%@pup.edu.ph'`),
 }));
 
 // ============================================

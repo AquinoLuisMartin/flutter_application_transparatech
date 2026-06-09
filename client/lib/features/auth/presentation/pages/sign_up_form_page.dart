@@ -60,7 +60,7 @@ class _SignUpFormPageState extends State<SignUpFormPage> {
   void _onEmailChanged(String value) {
     setState(() {
       final trimmedEmail = value.trim().toLowerCase();
-      final domain = _selectedRole == 'Admin' ? '@pup.edu.ph' : '@iskolarngbayan.pup.edu.ph';
+      const domain = '@pup.edu.ph';
       _isEmailValid = trimmedEmail.endsWith(domain) && trimmedEmail.length > domain.length;
     });
   }
@@ -79,7 +79,7 @@ class _SignUpFormPageState extends State<SignUpFormPage> {
     if (value == null || value.isEmpty) return 'Email is required';
     
     final trimmedEmail = value.trim().toLowerCase();
-    final domain = _selectedRole == 'Admin' ? '@pup.edu.ph' : '@iskolarngbayan.pup.edu.ph';
+    const domain = '@pup.edu.ph';
     
     if (!trimmedEmail.endsWith(domain)) {
       return 'Must be a PUP address ($domain)';
@@ -397,7 +397,7 @@ class _SignUpFormPageState extends State<SignUpFormPage> {
 
               CustomTextFormField(
                 label: 'PUP Webmail Address *',
-                hintText: _selectedRole == 'Admin' ? 'name@pup.edu.ph' : '...iskolarngbayan.pup.edu.ph',
+                hintText: 'name@pup.edu.ph',
                 inputType: TextInputType.emailAddress,
                 controller: _emailController,
                 prefixIcon: 'email',

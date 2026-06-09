@@ -6,6 +6,7 @@ import 'package:flutter_application_transparatech/features/dashboard/presentatio
 import 'package:flutter_application_transparatech/features/auth/presentation/pages/sign_up_form_page.dart';
 import 'package:flutter_application_transparatech/features/auth/presentation/pages/forgot_password_page.dart';
 import 'package:flutter_application_transparatech/features/auth/presentation/providers/auth_provider.dart';
+import 'package:flutter_application_transparatech/features/admin/presentation/pages/admin_dashboard_page.dart';
 
 class AuthPage extends StatefulWidget {
   const AuthPage({super.key});
@@ -24,9 +25,8 @@ class _AuthPageState extends State<AuthPage> {
   void _onEmailChanged(String value) {
     setState(() {
       final trimmedEmail = value.trim().toLowerCase();
-      const domain = '@iskolarngbayan.pup.edu.ph';
-      _isEmailValid =
-          trimmedEmail.endsWith(domain) && trimmedEmail.length > domain.length;
+      _isEmailValid = trimmedEmail.endsWith('@pup.edu.ph') && 
+          trimmedEmail.length > 11;
     });
   }
 
@@ -35,12 +35,8 @@ class _AuthPageState extends State<AuthPage> {
       return 'Email is required';
     }
     final trimmedEmail = value.trim().toLowerCase();
-    const domain = '@iskolarngbayan.pup.edu.ph';
-    if (!trimmedEmail.endsWith(domain)) {
-      return 'Must use @iskolarngbayan.pup.edu.ph email';
-    }
-    if (trimmedEmail.length <= domain.length) {
-      return 'Please enter a valid email address';
+    if (!trimmedEmail.endsWith('@pup.edu.ph')) {
+      return 'Must use @pup.edu.ph email address';
     }
     return null;
   }
@@ -64,12 +60,23 @@ class _AuthPageState extends State<AuthPage> {
       );
 
       if (success && mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const DashboardPage(),
-          ),
-        );
+        final user = authProvider.currentUser;
+        
+        if (user?.roleId == 1) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const AdminDashboardPage(),
+            ),
+          );
+        } else {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const DashboardPage(),
+            ),
+          );
+        }
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(authProvider.errorMessage ?? 'Login failed')),
@@ -156,7 +163,7 @@ class _AuthPageState extends State<AuthPage> {
                   // Form Fields (No Card)
                   CustomTextFormField(
                     label: 'Email Address',
-                    hintText: 'username@iskolarngbayan.pup.edu.ph',
+                    hintText: 'username@pup.edu.ph',
                     inputType: TextInputType.emailAddress,
                     controller: _emailController,
                     onChanged: _onEmailChanged,
