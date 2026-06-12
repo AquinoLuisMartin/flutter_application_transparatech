@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_application_transparatech/core/theme/verifi_theme.dart';
 
 class CustomDropdownField<T> extends StatelessWidget {
   final String label;
@@ -28,27 +29,25 @@ class CustomDropdownField<T> extends StatelessWidget {
       children: [
         Text(
           label,
-          style: GoogleFonts.inter(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: Colors.grey.shade800,
+          style: VeriFiTypography.label.copyWith(
+            color: VeriFiColors.textGrey,
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: VeriFiSpacing.s8),
         DropdownButtonFormField<T>(
-          value: value,
+          initialValue: value,
           items: items,
           onChanged: onChanged,
           validator: validator,
           style: GoogleFonts.inter(
             fontSize: 14,
             fontWeight: FontWeight.w500,
-            color: Colors.grey.shade800,
+            color: VeriFiColors.textDark,
           ),
           decoration: InputDecoration(
             hintText: hintText,
             hintStyle: GoogleFonts.inter(
-              color: Colors.grey.shade400,
+              color: VeriFiColors.textLight,
               fontSize: 14,
             ),
             prefixIcon: prefixIcon != null
@@ -56,37 +55,37 @@ class CustomDropdownField<T> extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     child: Icon(
                       _getIconData(prefixIcon!),
-                      color: Colors.grey.shade400,
+                      color: VeriFiColors.textLight,
                     ),
                   )
                 : null,
             filled: true,
             fillColor: Colors.white,
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(
-                color: Colors.grey.shade300,
+              borderRadius: BorderRadius.circular(VeriFiBorderRadius.inputs),
+              borderSide: const BorderSide(
+                color: Color(0xFFE5E7EB),
                 width: 1.0,
               ),
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(
-                color: Colors.grey.shade300,
+              borderRadius: BorderRadius.circular(VeriFiBorderRadius.inputs),
+              borderSide: const BorderSide(
+                color: Color(0xFFE5E7EB),
                 width: 1.0,
               ),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(
-                color: Colors.blue.shade600,
+              borderRadius: BorderRadius.circular(VeriFiBorderRadius.inputs),
+              borderSide: const BorderSide(
+                color: VeriFiColors.primary,
                 width: 1.5,
               ),
             ),
             errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(VeriFiBorderRadius.inputs),
               borderSide: const BorderSide(
-                color: Colors.red,
+                color: VeriFiColors.error,
               ),
             ),
             contentPadding: const EdgeInsets.symmetric(
@@ -95,8 +94,8 @@ class CustomDropdownField<T> extends StatelessWidget {
             ),
           ),
           dropdownColor: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          icon: Icon(Icons.keyboard_arrow_down, color: Colors.grey.shade400),
+          borderRadius: BorderRadius.circular(VeriFiBorderRadius.inputs),
+          icon: const Icon(Icons.keyboard_arrow_down, color: VeriFiColors.textLight),
         ),
       ],
     );

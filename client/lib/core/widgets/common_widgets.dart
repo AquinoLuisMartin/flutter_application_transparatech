@@ -4,6 +4,8 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_application_transparatech/core/theme/verifi_theme.dart';
 import '../constants/app_constants.dart';
 
 /// Custom app bar widget
@@ -201,7 +203,7 @@ class PrimaryButton extends StatelessWidget {
   final String label;
 
   /// Callback when button is pressed
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
 
   /// Whether button is in loading state
   final bool isLoading;
@@ -225,33 +227,254 @@ class PrimaryButton extends StatelessWidget {
     required this.onPressed,
     this.isLoading = false,
     this.isEnabled = true,
-    this.width,
-    this.height = AppDimensions.buttonHeightMedium,
+    this.width = double.infinity,
+    this.height = 56.0,
     this.icon,
   });
 
   @override
   Widget build(BuildContext context) {
+    final bool active = isEnabled && !isLoading && onPressed != null;
     return SizedBox(
       width: width,
       height: height,
-      child: ElevatedButton.icon(
-        onPressed: isLoading || !isEnabled ? null : onPressed,
-        icon: isLoading
-            ? SizedBox(
-                width: 20,
-                height: 20,
+      child: ElevatedButton(
+        onPressed: active ? onPressed : null,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: VeriFiColors.primary,
+          foregroundColor: Colors.white,
+          disabledBackgroundColor: VeriFiColors.primary.withValues(alpha: 0.5),
+          disabledForegroundColor: Colors.white.withValues(alpha: 0.7),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(VeriFiBorderRadius.buttons),
+          ),
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(horizontal: VeriFiSpacing.s24),
+        ),
+        child: isLoading
+            ? const SizedBox(
+                width: 24,
+                height: 24,
                 child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    Theme.of(context).colorScheme.onPrimary,
-                  ),
+                  strokeWidth: 2.5,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                 ),
               )
-            : icon != null
-                ? Icon(icon)
-                : null,
-        label: Text(label),
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (icon != null) ...[
+                    Icon(icon, size: 20),
+                    const SizedBox(width: VeriFiSpacing.s8),
+                  ],
+                  Text(
+                    label,
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+}
+
+/// Custom secondary button widget
+class SecondaryButton extends StatelessWidget {
+  /// Button label text
+  final String label;
+
+  /// Callback when button is pressed
+  final VoidCallback? onPressed;
+
+  /// Whether button is in loading state
+  final bool isLoading;
+
+  /// Whether button is enabled
+  final bool isEnabled;
+
+  /// Custom button width
+  final double? width;
+
+  /// Button height
+  final double height;
+
+  /// Optional icon to display
+  final IconData? icon;
+
+  /// Constructor for SecondaryButton
+  const SecondaryButton({
+    super.key,
+    required this.label,
+    required this.onPressed,
+    this.isLoading = false,
+    this.isEnabled = true,
+    this.width = double.infinity,
+    this.height = 56.0,
+    this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final bool active = isEnabled && !isLoading && onPressed != null;
+    return SizedBox(
+      width: width,
+      height: height,
+      child: OutlinedButton(
+        onPressed: active ? onPressed : null,
+        style: OutlinedButton.styleFrom(
+          foregroundColor: VeriFiColors.primary,
+          disabledForegroundColor: VeriFiColors.primary.withValues(alpha: 0.5),
+          side: BorderSide(
+            color: active ? VeriFiColors.primary : VeriFiColors.primary.withValues(alpha: 0.5),
+            width: 1.5,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(VeriFiBorderRadius.buttons),
+          ),
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(horizontal: VeriFiSpacing.s24),
+        ),
+        child: isLoading
+            ? const SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  valueColor: AlwaysStoppedAnimation<Color>(VeriFiColors.primary),
+                ),
+              )
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (icon != null) ...[
+                    Icon(icon, size: 20),
+                    const SizedBox(width: VeriFiSpacing.s8),
+                  ],
+                  Text(
+                    label,
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+}
+
+/// Reusable VeriFi Card component
+class VeriFiCard extends StatelessWidget {
+  /// Icon displayed on the left side of the card
+  final Widget icon;
+
+  /// Title of the card
+  final String title;
+
+  /// Description / subtitle text of the card
+  final String description;
+
+  /// Optional status widget (e.g. badge or indicator)
+  final Widget? status;
+
+  /// Optional action widget (e.g. trailing chevron or button)
+  final Widget? action;
+
+  /// Optional click listener
+  final VoidCallback? onTap;
+
+  /// Constructor for VeriFiCard
+  const VeriFiCard({
+    super.key,
+    required this.icon,
+    required this.title,
+    required this.description,
+    this.status,
+    this.action,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: VeriFiSpacing.s16),
+        padding: const EdgeInsets.all(VeriFiSpacing.s16),
+        decoration: BoxDecoration(
+          color: VeriFiColors.surface,
+          borderRadius: BorderRadius.circular(VeriFiBorderRadius.cards),
+          border: Border.all(color: const Color(0xFFEEF2FF), width: 1.5),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(VeriFiSpacing.s8),
+              decoration: BoxDecoration(
+                color: VeriFiColors.secondaryEE,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: IconTheme(
+                data: const IconThemeData(
+                  color: VeriFiColors.primary,
+                  size: 24,
+                ),
+                child: icon,
+              ),
+            ),
+            const SizedBox(width: VeriFiSpacing.s16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: VeriFiColors.textDark,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    description,
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w400,
+                      color: VeriFiColors.textGrey,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (status != null) ...[
+                    const SizedBox(height: VeriFiSpacing.s8),
+                    status!,
+                  ],
+                ],
+              ),
+            ),
+            if (action != null) ...[
+              const SizedBox(width: VeriFiSpacing.s8),
+              action!,
+            ],
+          ],
+        ),
       ),
     );
   }

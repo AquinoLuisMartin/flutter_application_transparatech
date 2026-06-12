@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_application_transparatech/features/landing/presentation/pages/landing_page.dart';
 import 'package:flutter_application_transparatech/features/auth/presentation/pages/auth_page.dart';
@@ -7,6 +6,8 @@ import 'package:flutter_application_transparatech/features/auth/presentation/pro
 import 'package:flutter_application_transparatech/features/document_analysis/presentation/providers/document_provider.dart';
 import 'package:flutter_application_transparatech/core/utils/logger.dart';
 import 'package:flutter_application_transparatech/core/config/build_config.dart';
+
+import 'package:flutter_application_transparatech/core/theme/verifi_theme.dart';
 
 void main() {
   // Initialize logger and logging
@@ -30,29 +31,10 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Verifi',
+      title: 'VeriFi',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.deepPurple,
-          brightness: Brightness.light,
-        ),
-        textTheme: GoogleFonts.interTextTheme(
-          Theme.of(context).textTheme,
-        ),
-        scaffoldBackgroundColor: Colors.white,
-      ),
-      darkTheme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.deepPurple,
-          brightness: Brightness.dark,
-        ),
-        textTheme: GoogleFonts.interTextTheme(
-          ThemeData.dark().textTheme,
-        ),
-      ),
+      theme: VeriFiTheme.lightTheme,
+      darkTheme: VeriFiTheme.darkTheme,
       themeMode: ThemeMode.system,
       home: const LandingPage(),
       routes: {

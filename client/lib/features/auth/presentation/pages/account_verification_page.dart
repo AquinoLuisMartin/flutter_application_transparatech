@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_application_transparatech/core/theme/verifi_theme.dart';
+import 'package:flutter_application_transparatech/core/widgets/widgets.dart';
 import 'package:flutter_application_transparatech/core/utils/logger.dart';
 
 class AccountVerificationPage extends StatefulWidget {
@@ -178,71 +180,31 @@ class _AccountVerificationPageState extends State<AccountVerificationPage> {
   }
 
   Widget _buildVerificationStep(VerificationStep step, int index) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: step.isComplete ? Colors.blue.shade50 : Colors.grey.shade50,
-        border: Border.all(
-          color: step.isComplete ? Colors.blue.shade200 : Colors.grey.shade200,
+    return VeriFiCard(
+      icon: Container(
+        width: 32,
+        height: 32,
+        decoration: BoxDecoration(
+          color: step.isComplete ? VeriFiColors.primary : Colors.grey.shade300,
+          shape: BoxShape.circle,
         ),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: step.isComplete ? Colors.blue.shade600 : Colors.grey.shade300,
-              shape: BoxShape.circle,
-            ),
-            child: step.isComplete
-                ? Icon(
-                    Icons.check,
-                    color: Colors.white,
-                    size: 20,
-                  )
-                : Center(
-                    child: SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          Colors.grey.shade500,
-                        ),
-                      ),
+        child: step.isComplete
+            ? const Icon(Icons.check, color: Colors.white, size: 16)
+            : Center(
+                child: SizedBox(
+                  width: 12,
+                  height: 12,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      Colors.grey.shade500,
                     ),
                   ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  step.title,
-                  style: GoogleFonts.inter(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87,
-                  ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  step.subtitle,
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w400,
-                    color: Colors.grey.shade600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
+              ),
       ),
+      title: step.title,
+      description: step.subtitle,
     );
   }
 
@@ -252,23 +214,13 @@ class _AccountVerificationPageState extends State<AccountVerificationPage> {
         (_completedSteps / _verificationSteps.length * 100).toInt();
 
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        automaticallyImplyLeading: false,
-        title: Text(
-          'Verifying Account',
-          style: GoogleFonts.inter(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
-          ),
-        ),
-        centerTitle: false,
+      backgroundColor: VeriFiColors.background,
+      appBar: const AppBarWidget(
+        title: 'Verifying Account',
+        showBackButton: false,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: VeriFiSpacing.s24, vertical: VeriFiSpacing.s16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -276,18 +228,16 @@ class _AccountVerificationPageState extends State<AccountVerificationPage> {
               padding: const EdgeInsets.only(left: 4.0),
               child: Text(
                 'Please wait while we validate your details',
-                style: GoogleFonts.inter(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w400,
-                  color: Colors.grey.shade600,
+                style: VeriFiTypography.bodyText.copyWith(
+                  color: VeriFiColors.textGrey,
                 ),
               ),
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: VeriFiSpacing.s32),
 
             _buildStepIndicator(),
 
-            const SizedBox(height: 32),
+            const SizedBox(height: VeriFiSpacing.s32),
 
             // Verification Progress
             Row(
@@ -298,7 +248,7 @@ class _AccountVerificationPageState extends State<AccountVerificationPage> {
                   style: GoogleFonts.inter(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: Colors.black87,
+                    color: VeriFiColors.textDark,
                   ),
                 ),
                 Text(
@@ -306,7 +256,7 @@ class _AccountVerificationPageState extends State<AccountVerificationPage> {
                   style: GoogleFonts.inter(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: Colors.blue.shade600,
+                    color: VeriFiColors.primary,
                   ),
                 ),
               ],
@@ -321,63 +271,28 @@ class _AccountVerificationPageState extends State<AccountVerificationPage> {
                 minHeight: 6,
                 backgroundColor: Colors.grey.shade200,
                 valueColor:
-                    AlwaysStoppedAnimation<Color>(Colors.blue.shade600),
+                    const AlwaysStoppedAnimation<Color>(VeriFiColors.primary),
               ),
             ),
 
-            const SizedBox(height: 32),
+            const SizedBox(height: VeriFiSpacing.s32),
 
             // Verification Steps
             ..._verificationSteps.asMap().entries.map(
               (entry) => _buildVerificationStep(entry.value, entry.key),
             ),
 
-            const SizedBox(height: 48),
+            const SizedBox(height: VeriFiSpacing.s48),
 
             // Complete Setup Button
-            SizedBox(
-              width: double.infinity,
-              height: 56,
-              child: ElevatedButton(
-                onPressed: (_isVerificationComplete && !_isCompleting)
-                    ? _handleCompleteSetup
-                    : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _isVerificationComplete
-                      ? Colors.blue.shade600
-                      : Colors.grey.shade300,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  elevation: _isVerificationComplete ? 3 : 0,
-                  shadowColor: _isVerificationComplete
-                      ? Colors.blue.withValues(alpha: 0.3)
-                      : Colors.transparent,
-                  disabledBackgroundColor: Colors.grey.shade300,
-                ),
-                child: _isCompleting
-                    ? SizedBox(
-                        height: 24,
-                        width: 24,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                        ),
-                      )
-                    : Text(
-                        _isVerificationComplete ? 'Complete Setup' : 'Verifying...',
-                        style: GoogleFonts.inter(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: _isVerificationComplete
-                              ? Colors.white
-                              : Colors.grey.shade600,
-                        ),
-                      ),
-              ),
+            PrimaryButton(
+              label: _isVerificationComplete ? 'Complete Setup' : 'Verifying...',
+              onPressed: _handleCompleteSetup,
+              isEnabled: _isVerificationComplete,
+              isLoading: _isCompleting,
             ),
 
-            const SizedBox(height: 32),
+            const SizedBox(height: VeriFiSpacing.s32),
           ],
         ),
       ),

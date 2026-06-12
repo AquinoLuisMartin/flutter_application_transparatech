@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_application_transparatech/core/theme/verifi_theme.dart';
 
 class CustomTextFormField extends StatefulWidget {
   final String label;
@@ -46,8 +47,8 @@ class _CustomTextFormFieldState extends State<CustomTextFormField> {
 
   @override
   Widget build(BuildContext context) {
-    // Valid field gets a green border, otherwise grey/blue as usual.
-    final Color borderColor = widget.isValid ? Colors.green.shade400 : Colors.grey.shade300;
+    // Valid field gets a green success border, otherwise neutral.
+    final Color borderColor = widget.isValid ? VeriFiColors.success : const Color(0xFFE5E7EB);
     final double borderWidth = widget.isValid ? 1.5 : 1.0;
 
     return Column(
@@ -58,16 +59,14 @@ class _CustomTextFormFieldState extends State<CustomTextFormField> {
           children: [
             Text(
               widget.label,
-              style: GoogleFonts.inter(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: Colors.grey.shade800,
+              style: VeriFiTypography.label.copyWith(
+                color: VeriFiColors.textGrey,
               ),
             ),
             if (widget.labelTrailing != null) widget.labelTrailing!,
           ],
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: VeriFiSpacing.s8),
         TextFormField(
           controller: widget.controller,
           keyboardType: widget.inputType,
@@ -77,15 +76,16 @@ class _CustomTextFormFieldState extends State<CustomTextFormField> {
           decoration: InputDecoration(
             hintText: widget.hintText,
             hintStyle: GoogleFonts.inter(
-              color: Colors.grey.shade400,
+              color: VeriFiColors.textLight,
               fontSize: 14,
+              fontWeight: FontWeight.w400,
             ),
             prefixIcon: widget.prefixIcon != null
                 ? Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     child: Icon(
                       _getIconData(widget.prefixIcon!),
-                      color: Colors.grey.shade400,
+                      color: VeriFiColors.textLight,
                     ),
                   )
                 : null,
@@ -93,7 +93,7 @@ class _CustomTextFormFieldState extends State<CustomTextFormField> {
                 ? IconButton(
                     icon: Icon(
                       _isObscured ? Icons.visibility_off : Icons.visibility,
-                      color: Colors.grey.shade400,
+                      color: VeriFiColors.textLight,
                     ),
                     onPressed: () {
                       setState(() {
@@ -102,35 +102,42 @@ class _CustomTextFormFieldState extends State<CustomTextFormField> {
                     },
                   )
                 : (widget.isValid
-                    ? Icon(Icons.check, color: Colors.green.shade400)
+                    ? const Icon(Icons.check_circle_outline, color: VeriFiColors.success)
                     : null),
             filled: true,
             fillColor: Colors.white,
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(VeriFiBorderRadius.inputs),
               borderSide: BorderSide(
                 color: borderColor,
                 width: borderWidth,
               ),
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(VeriFiBorderRadius.inputs),
               borderSide: BorderSide(
                 color: borderColor,
                 width: borderWidth,
               ),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(VeriFiBorderRadius.inputs),
               borderSide: BorderSide(
-                color: widget.isValid ? Colors.green.shade400 : Colors.blue.shade600,
+                color: widget.isValid ? VeriFiColors.success : VeriFiColors.primary,
                 width: 1.5,
               ),
             ),
             errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(VeriFiBorderRadius.inputs),
               borderSide: const BorderSide(
-                color: Colors.red,
+                color: VeriFiColors.error,
+              ),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(VeriFiBorderRadius.inputs),
+              borderSide: const BorderSide(
+                color: VeriFiColors.error,
+                width: 1.5,
               ),
             ),
             contentPadding: const EdgeInsets.symmetric(
@@ -142,7 +149,7 @@ class _CustomTextFormFieldState extends State<CustomTextFormField> {
           style: GoogleFonts.inter(
             fontSize: 14,
             fontWeight: FontWeight.w500,
-            color: Colors.grey.shade800,
+            color: VeriFiColors.textDark,
           ),
         ),
         if (widget.helperText != null) ...[
@@ -152,7 +159,7 @@ class _CustomTextFormFieldState extends State<CustomTextFormField> {
             style: GoogleFonts.inter(
               fontSize: 11,
               fontWeight: FontWeight.w400,
-              color: Colors.grey.shade500,
+              color: VeriFiColors.textLight,
             ),
           ),
         ],

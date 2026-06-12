@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_application_transparatech/core/widgets/custom_text_form_field.dart';
+import 'package:flutter_application_transparatech/core/theme/verifi_theme.dart';
+import 'package:flutter_application_transparatech/core/widgets/widgets.dart';
 import 'package:flutter_application_transparatech/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:flutter_application_transparatech/features/auth/presentation/pages/sign_up_form_page.dart';
 import 'package:flutter_application_transparatech/features/auth/presentation/pages/forgot_password_page.dart';
@@ -25,9 +26,21 @@ class _AuthPageState extends State<AuthPage> {
   void _onEmailChanged(String value) {
     setState(() {
       final trimmedEmail = value.trim().toLowerCase();
-      _isEmailValid = trimmedEmail.endsWith('@pup.edu.ph') && 
-          trimmedEmail.length > 11;
+      _isEmailValid = (trimmedEmail.endsWith('@pup.edu.ph') && trimmedEmail.length > 11) ||
+          (trimmedEmail.endsWith('@iskolarngbayang.pup.edu.ph') && trimmedEmail.length > 25) ||
+          (trimmedEmail.endsWith('@iskolarngbayan.pup.edu.ph') && trimmedEmail.length > 24);
     });
+  }
+
+  String? get _detectedRole {
+    final email = _emailController.text.trim().toLowerCase();
+    if (email.endsWith('@pup.edu.ph') && email.length > 11) {
+      return 'Admin';
+    } else if ((email.endsWith('@iskolarngbayang.pup.edu.ph') && email.length > 25) ||
+               (email.endsWith('@iskolarngbayan.pup.edu.ph') && email.length > 24)) {
+      return 'Student / Officer';
+    }
+    return null;
   }
 
   String? _validateEmail(String? value) {
@@ -35,10 +48,14 @@ class _AuthPageState extends State<AuthPage> {
       return 'Email is required';
     }
     final trimmedEmail = value.trim().toLowerCase();
-    if (!trimmedEmail.endsWith('@pup.edu.ph')) {
-      return 'Must use @pup.edu.ph email address';
+    if (trimmedEmail.endsWith('@pup.edu.ph') && trimmedEmail.length > 11) {
+      return null;
     }
-    return null;
+    if ((trimmedEmail.endsWith('@iskolarngbayang.pup.edu.ph') && trimmedEmail.length > 25) ||
+        (trimmedEmail.endsWith('@iskolarngbayan.pup.edu.ph') && trimmedEmail.length > 24)) {
+      return null;
+    }
+    return 'Must use @iskolarngbayang.pup.edu.ph (Student/Officer) or @pup.edu.ph (Admin)';
   }
 
   String? _validatePassword(String? value) {
@@ -92,85 +109,60 @@ class _AuthPageState extends State<AuthPage> {
     super.dispose();
   }
 
-  Widget _buildSocialOrQuickAccessButton({required String label, required IconData icon, required VoidCallback onTap}) {
-    return SizedBox(
-      width: double.infinity,
-      height: 56,
-      child: OutlinedButton.icon(
-        onPressed: onTap,
-        icon: Icon(icon, color: Colors.grey.shade700, size: 20),
-        label: Text(
-          label,
-          style: GoogleFonts.inter(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: Colors.grey.shade700,
-          ),
-        ),
-        style: OutlinedButton.styleFrom(
-          backgroundColor: Colors.grey.shade200,
-          side: BorderSide.none,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(28),
-          ),
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: VeriFiColors.background,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: const SizedBox.shrink(),
-        leadingWidth: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: VeriFiColors.textDark),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+            padding: const EdgeInsets.symmetric(horizontal: VeriFiSpacing.s24),
             child: Form(
               key: _formKey,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SizedBox(height: 24),
+                  const SizedBox(height: VeriFiSpacing.s24),
                   // Header
                   Text(
                     'Login',
-                    style: GoogleFonts.inter(
-                      fontSize: 32,
-                      fontWeight: FontWeight.w800,
-                      color: const Color(0xFF1F2937),
+                    style: VeriFiTypography.pageTitle.copyWith(
+                      color: VeriFiColors.primary,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: VeriFiSpacing.s8),
                   Text(
                     'Welcome back to the app',
-                    style: GoogleFonts.inter(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w400,
-                      color: Colors.blueGrey.shade600,
+                    style: VeriFiTypography.bodyText.copyWith(
+                      color: VeriFiColors.textGrey,
                     ),
                   ),
-                  const SizedBox(height: 48),
+                  const SizedBox(height: VeriFiSpacing.s48),
 
-                  // Form Fields (No Card)
+                  // Form Fields
                   CustomTextFormField(
                     label: 'Email Address',
-                    hintText: 'username@pup.edu.ph',
+                    hintText: 'username@iskolarngbayang.pup.edu.ph',
                     inputType: TextInputType.emailAddress,
                     controller: _emailController,
                     onChanged: _onEmailChanged,
                     isValid: _isEmailValid,
                     validator: _validateEmail,
+                    helperText: _detectedRole != null 
+                        ? 'Detected Role: $_detectedRole' 
+                        : 'Use @iskolarngbayang.pup.edu.ph for Students/Officers or @pup.edu.ph for Admins',
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: VeriFiSpacing.s24),
                   CustomTextFormField(
                     label: 'Password',
                     hintText: '••••••••••••',
@@ -192,12 +184,12 @@ class _AuthPageState extends State<AuthPage> {
                         style: GoogleFonts.inter(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
-                          color: const Color(0xFF3B48F6),
+                          color: VeriFiColors.primary,
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: VeriFiSpacing.s24),
                   
                   // Keep me signed in
                   Row(
@@ -212,7 +204,7 @@ class _AuthPageState extends State<AuthPage> {
                               _keepSignedIn = value ?? false;
                             });
                           },
-                          activeColor: const Color(0xFF3B48F6),
+                          activeColor: VeriFiColors.primary,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(4),
                           ),
@@ -224,73 +216,38 @@ class _AuthPageState extends State<AuthPage> {
                         style: GoogleFonts.inter(
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
-                          color: Colors.blueGrey.shade600,
+                          color: VeriFiColors.textGrey,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: VeriFiSpacing.s32),
 
                   // Log In Button
-                  SizedBox(
-                    width: double.infinity,
-                    height: 56,
-                    child: ElevatedButton(
-                      onPressed: authProvider.isLoading ? null : _handleLogin,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF3B48F6),
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(28),
-                        ),
-                        elevation: 0,
-                      ),
-                      child: authProvider.isLoading
-                          ? const CircularProgressIndicator(color: Colors.white)
-                          : Text(
-                              'Login',
-                              style: GoogleFonts.inter(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                    ),
+                  PrimaryButton(
+                    label: 'Login',
+                    onPressed: _handleLogin,
+                    isLoading: authProvider.isLoading,
                   ),
-                  const SizedBox(height: 48),
+                  const SizedBox(height: VeriFiSpacing.s48),
 
                   // Separator
-                  Row(
-                    children: [
-                      Expanded(child: Divider(color: Colors.grey.shade200, thickness: 1)),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Text(
-                          'or sign in with',
-                          style: GoogleFonts.inter(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.grey.shade400,
-                          ),
-                        ),
-                      ),
-                      Expanded(child: Divider(color: Colors.grey.shade200, thickness: 1)),
-                    ],
-                  ),
-                  const SizedBox(height: 32),
+                  DividerWithText(text: 'or sign in with'),
+                  const SizedBox(height: VeriFiSpacing.s32),
 
-                  // Quick Access / Google Alternative (Kept meaning, changed layout)
-                  _buildSocialOrQuickAccessButton(
+                  // Quick Access / Alternative options
+                  SecondaryButton(
                     label: 'Continue with Biometrics',
-                    icon: Icons.fingerprint,
-                    onTap: () {},
+                    icon: Icons.fingerprint_outlined,
+                    onPressed: () {},
                   ),
-                  const SizedBox(height: 16),
-                  _buildSocialOrQuickAccessButton(
+                  const SizedBox(height: VeriFiSpacing.s16),
+                  SecondaryButton(
                     label: 'Continue with PIN',
                     icon: Icons.pin_outlined,
-                    onTap: () {},
+                    onPressed: () {},
                   ),
-                  const SizedBox(height: 48),
+                  const SizedBox(height: VeriFiSpacing.s48),
 
                   // Create Account Link
                   Center(
@@ -308,12 +265,12 @@ class _AuthPageState extends State<AuthPage> {
                         style: GoogleFonts.inter(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
-                          color: const Color(0xFF3B48F6),
+                          color: VeriFiColors.primary,
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 40),
+                  const SizedBox(height: VeriFiSpacing.s40),
                 ],
               ),
             ),

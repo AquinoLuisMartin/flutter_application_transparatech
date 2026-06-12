@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:flutter_application_transparatech/core/widgets/custom_text_form_field.dart';
-import 'package:flutter_application_transparatech/core/widgets/custom_dropdown_field.dart';
+import 'package:flutter_application_transparatech/core/theme/verifi_theme.dart';
+import 'package:flutter_application_transparatech/core/widgets/widgets.dart';
 import 'package:flutter_application_transparatech/core/network/http_client.dart';
 import 'package:flutter_application_transparatech/core/utils/logger.dart';
 import 'profile_setup_page.dart';
@@ -60,9 +60,38 @@ class _SignUpFormPageState extends State<SignUpFormPage> {
   void _onEmailChanged(String value) {
     setState(() {
       final trimmedEmail = value.trim().toLowerCase();
-      const domain = '@pup.edu.ph';
-      _isEmailValid = trimmedEmail.endsWith(domain) && trimmedEmail.length > domain.length;
+      if (_selectedRole == 'Admin') {
+        _isEmailValid = trimmedEmail.endsWith('@pup.edu.ph') && trimmedEmail.length > 11;
+      } else {
+        _isEmailValid = (trimmedEmail.endsWith('@iskolarngbayang.pup.edu.ph') && trimmedEmail.length > 25) ||
+            (trimmedEmail.endsWith('@iskolarngbayan.pup.edu.ph') && trimmedEmail.length > 24);
+      }
     });
+  }
+
+  String? get _detectedRole {
+    final email = _emailController.text.trim().toLowerCase();
+    if (email.endsWith('@pup.edu.ph') && email.length > 11) {
+      return 'Admin';
+    } else if ((email.endsWith('@iskolarngbayang.pup.edu.ph') && email.length > 25) ||
+               (email.endsWith('@iskolarngbayan.pup.edu.ph') && email.length > 24)) {
+      return 'Student / Officer';
+    }
+    return null;
+  }
+
+  String? get _detectedRoleWarning {
+    final email = _emailController.text.trim().toLowerCase();
+    if (email.isEmpty) return null;
+    final detected = _detectedRole;
+    if (detected == null) return 'Invalid domain suffix';
+    if (_selectedRole == 'Admin' && detected != 'Admin') {
+      return 'Selected role is Admin, but email domain is for Student/Officer';
+    }
+    if (_selectedRole != 'Admin' && detected == 'Admin') {
+      return 'Selected role is $_selectedRole, but email domain is for Admin';
+    }
+    return null;
   }
 
   void _onStudentIdChanged(String value) {
@@ -79,14 +108,16 @@ class _SignUpFormPageState extends State<SignUpFormPage> {
     if (value == null || value.isEmpty) return 'Email is required';
     
     final trimmedEmail = value.trim().toLowerCase();
-    const domain = '@pup.edu.ph';
     
-    if (!trimmedEmail.endsWith(domain)) {
-      return 'Must be a PUP address ($domain)';
-    }
-    
-    if (trimmedEmail.length <= domain.length) {
-      return 'Please enter a valid email address';
+    if (_selectedRole == 'Admin') {
+      if (!trimmedEmail.endsWith('@pup.edu.ph') || trimmedEmail.length <= 11) {
+        return 'Must be an Admin PUP webmail address (@pup.edu.ph)';
+      }
+    } else {
+      if (!trimmedEmail.endsWith('@iskolarngbayang.pup.edu.ph') && 
+          !trimmedEmail.endsWith('@iskolarngbayan.pup.edu.ph')) {
+        return 'Must be a Student/Officer webmail address (@iskolarngbayang.pup.edu.ph)';
+      }
     }
     
     return null;
@@ -343,36 +374,12 @@ class _SignUpFormPageState extends State<SignUpFormPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: 16.0),
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.grey.shade50,
-              shape: BoxShape.circle,
-            ),
-            child: IconButton(
-              icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black54, size: 18),
-              onPressed: () => Navigator.pop(context),
-            ),
-          ),
-        ),
-        leadingWidth: 64,
-        title: Text(
-          'Create Account',
-          style: GoogleFonts.inter(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
-          ),
-        ),
-        centerTitle: false,
+      backgroundColor: VeriFiColors.background,
+      appBar: const AppBarWidget(
+        title: 'Create Account',
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: VeriFiSpacing.s24, vertical: VeriFiSpacing.s16),
         child: Form(
           key: _formKey,
           child: Column(
@@ -382,10 +389,8 @@ class _SignUpFormPageState extends State<SignUpFormPage> {
                 padding: const EdgeInsets.only(left: 4.0),
                 child: Text(
                   'Register as a PUP Sta. Maria Iskolar ng Bayan',
-                  style: GoogleFonts.inter(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w400,
-                    color: Colors.grey.shade600,
+                  style: VeriFiTypography.bodyText.copyWith(
+                    color: VeriFiColors.textGrey,
                   ),
                 ),
               ),
@@ -397,13 +402,15 @@ class _SignUpFormPageState extends State<SignUpFormPage> {
 
               CustomTextFormField(
                 label: 'PUP Webmail Address *',
-                hintText: 'name@pup.edu.ph',
+                hintText: _selectedRole == 'Admin' ? 'name@pup.edu.ph' : 'name@iskolarngbayang.pup.edu.ph',
                 inputType: TextInputType.emailAddress,
                 controller: _emailController,
                 prefixIcon: 'email',
                 onChanged: _onEmailChanged,
                 isValid: _isEmailValid,
                 validator: _validateEmail,
+                helperText: _detectedRoleWarning ?? 
+                    (_detectedRole != null ? 'Email matches $_detectedRole domain' : 'Use @iskolarngbayang.pup.edu.ph (Student/Officer) or @pup.edu.ph (Admin)'),
               ),
               const SizedBox(height: 20),
 
@@ -470,38 +477,10 @@ class _SignUpFormPageState extends State<SignUpFormPage> {
 
               const SizedBox(height: 48),
 
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _handleSignupContinue,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue.shade600,
-                    disabledBackgroundColor: Colors.grey.shade400,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 3,
-                    shadowColor: Colors.blue.withValues(alpha: 0.3),
-                  ),
-                  child: _isLoading
-                      ? SizedBox(
-                          height: 24,
-                          width: 24,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                          ),
-                        )
-                      : Text(
-                          'Continue to Profile Setup',
-                          style: GoogleFonts.inter(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
-                        ),
-                ),
+              PrimaryButton(
+                label: 'Continue to Profile Setup',
+                onPressed: _handleSignupContinue,
+                isLoading: _isLoading,
               ),
               const SizedBox(height: 24),
               Center(

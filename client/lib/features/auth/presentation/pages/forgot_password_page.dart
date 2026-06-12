@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:flutter_application_transparatech/core/widgets/custom_text_form_field.dart';
+import 'package:flutter_application_transparatech/core/theme/verifi_theme.dart';
+import 'package:flutter_application_transparatech/core/widgets/widgets.dart';
 
 class ForgotPasswordPage extends StatefulWidget {
   const ForgotPasswordPage({super.key});
@@ -43,44 +43,35 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
-        ),
+      backgroundColor: VeriFiColors.background,
+      appBar: const AppBarWidget(
+        title: 'Forgot Password',
       ),
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+            padding: const EdgeInsets.symmetric(horizontal: VeriFiSpacing.s24),
             child: Form(
               key: _formKey,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SizedBox(height: 24),
+                  const SizedBox(height: VeriFiSpacing.s24),
                   // Header
                   Text(
                     'Forgot Password',
-                    style: GoogleFonts.inter(
-                      fontSize: 32,
-                      fontWeight: FontWeight.w800,
-                      color: const Color(0xFF1F2937),
+                    style: VeriFiTypography.pageTitle.copyWith(
+                      color: VeriFiColors.primary,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: VeriFiSpacing.s8),
                   Text(
                     'Enter your PUP webmail address and we will send you instructions to reset your password.',
-                    style: GoogleFonts.inter(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w400,
-                      color: Colors.blueGrey.shade600,
+                    style: VeriFiTypography.bodyText.copyWith(
+                      color: VeriFiColors.textGrey,
                     ),
                   ),
-                  const SizedBox(height: 48),
+                  const SizedBox(height: VeriFiSpacing.s48),
 
                   // Email Input
                   CustomTextFormField(
@@ -92,41 +83,23 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                     isValid: _isEmailValid,
                     validator: _validateEmail,
                   ),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: VeriFiSpacing.s32),
 
                   // Send Reset Link Button
-                  SizedBox(
-                    width: double.infinity,
-                    height: 56,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        if (_formKey.currentState!.validate()) {
-                          // Simulate API call for password reset
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Password reset link sent to your email.'),
-                              backgroundColor: Colors.green,
-                            ),
-                          );
-                          Navigator.pop(context);
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF3B48F6),
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(28),
-                        ),
-                        elevation: 0,
-                      ),
-                      child: Text(
-                        'Send Reset Link',
-                        style: GoogleFonts.inter(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
+                  PrimaryButton(
+                    label: 'Send Reset Link',
+                    onPressed: () {
+                      if (_formKey.currentState!.validate()) {
+                        // Simulate API call for password reset
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Password reset link sent to your email.'),
+                            backgroundColor: VeriFiColors.success,
+                          ),
+                        );
+                        Navigator.pop(context);
+                      }
+                    },
                   ),
                 ],
               ),

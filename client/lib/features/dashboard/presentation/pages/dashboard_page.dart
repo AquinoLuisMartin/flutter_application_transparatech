@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_application_transparatech/core/theme/verifi_theme.dart';
+import 'package:flutter_application_transparatech/core/widgets/widgets.dart';
 import 'package:flutter_application_transparatech/features/auth/presentation/providers/auth_provider.dart';
 import 'package:flutter_application_transparatech/features/document_analysis/presentation/providers/document_provider.dart';
 import 'package:flutter_application_transparatech/features/document_analysis/data/models/document_model.dart';
@@ -9,8 +11,8 @@ import 'package:flutter_application_transparatech/features/document_analysis/dat
 import 'notifications_page.dart';
 import 'settings_page.dart';
 import 'package:flutter_application_transparatech/features/admin/presentation/pages/admin_dashboard_page.dart';
-
 import 'package:flutter_application_transparatech/features/auth/presentation/pages/auth_page.dart';
+import 'package:flutter_application_transparatech/features/document_submission/presentation/pages/upload_page.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -35,17 +37,6 @@ class _DashboardPageState extends State<DashboardPage> {
     });
   }
 
-  String _getGreeting() {
-    final hour = DateTime.now().hour;
-    if (hour < 12) {
-      return 'Good morning';
-    } else if (hour < 17) {
-      return 'Good afternoon';
-    } else {
-      return 'Good evening';
-    }
-  }
-
   Widget _buildDocumentCard({
     required String title,
     required String date,
@@ -53,102 +44,23 @@ class _DashboardPageState extends State<DashboardPage> {
     bool isNew = false,
     bool showChevron = false,
   }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade100),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
+    return VeriFiCard(
+      icon: const Icon(Icons.description_outlined),
+      title: title,
+      description: 'Hash: ${hash.length > 15 ? "${hash.substring(0, 15)}..." : hash}',
+      status: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.blue.shade50,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(
-              Icons.description_outlined,
-              color: Colors.blue.shade600,
-              size: 24,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: GoogleFonts.inter(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: const Color(0xFF1F2937),
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 6),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Text(
-                      date,
-                      style: GoogleFonts.inter(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.grey.shade500,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      width: 4,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade300,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Icon(
-                      Icons.tag,
-                      size: 10,
-                      color: Colors.grey.shade400,
-                    ),
-                    const SizedBox(width: 2),
-                    Expanded(
-                      child: Text(
-                        hash,
-                        style: GoogleFonts.sourceCodePro(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.grey.shade500,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+          Text(
+            date,
+            style: VeriFiTypography.label,
           ),
           if (isNew) ...[
-            const SizedBox(width: 12),
+            const SizedBox(width: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: const Color(0xFFA7F3D0).withValues(alpha: 0.5), // Light green tint
+                color: VeriFiColors.secondaryEE,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
@@ -156,17 +68,14 @@ class _DashboardPageState extends State<DashboardPage> {
                 style: GoogleFonts.inter(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
-                  color: const Color(0xFF059669), // Emerald
+                  color: VeriFiColors.success,
                 ),
               ),
             ),
           ],
-          if (showChevron) ...[
-            const SizedBox(width: 8),
-            Icon(Icons.chevron_right, color: Colors.grey.shade400, size: 20),
-          ]
         ],
       ),
+      action: showChevron ? const Icon(Icons.chevron_right, color: VeriFiColors.textLight) : null,
     );
   }
 
@@ -220,130 +129,30 @@ class _DashboardPageState extends State<DashboardPage> {
     final String fullName = user != null ? '${user.firstName} ${user.lastName}' : 'Juan Santos';
     final int activeRoleId = _overrideRoleId ?? user?.roleId ?? 2;
     final String roleName = _getRoleName(activeRoleId);
-    final String greetingLabel = roleName == 'Student' ? 'Iskolar' : roleName;
 
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: const Color(0xFF132A42), // Very dark blue
-        borderRadius: roundedBottom
-            ? const BorderRadius.only(
-                bottomLeft: Radius.circular(24),
-                bottomRight: Radius.circular(24),
-              )
-            : null,
-      ),
-      padding: EdgeInsets.only(
-        top: MediaQuery.of(context).padding.top + 20, 
-        left: 24, 
-        right: 24, 
-        bottom: roundedBottom ? 40 : 24
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '${_getGreeting()}, $greetingLabel',
-                      style: GoogleFonts.inter(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w400,
-                        color: Colors.white.withValues(alpha: 0.7),
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      fullName,
-                      style: GoogleFonts.inter(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 16),
-              Row(
-                children: [
-                  // Notification Bell
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const NotificationsPage(),
-                        ),
-                      );
-                    },
-                    child: Stack(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.1),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(Icons.notifications_none, color: Colors.white, size: 22),
-                        ),
-                        Positioned(
-                          right: 0,
-                          top: 0,
-                          child: Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: const BoxDecoration(
-                              color: Colors.redAccent,
-                              shape: BoxShape.circle,
-                            ),
-                            child: Text(
-                              '3',
-                              style: GoogleFonts.inter(
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  // Profile Avatar
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: const Color(0xFF3B48F6), width: 2),
-                      image: DecorationImage(
-                        image: NetworkImage('https://ui-avatars.com/api/?name=${Uri.encodeComponent(fullName)}&background=0D8ABC&color=fff'), // Dynamic avatar
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
+    return VeriFiProfileHeader(
+      name: fullName,
+      role: roleName,
+      isDashboardStyle: true,
+      onNotificationTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const NotificationsPage(),
           ),
-          if (bottomContent != null) ...[
-            const SizedBox(height: 24),
-            bottomContent,
-          ],
-        ],
-      ),
+        );
+      },
+      notificationCount: 3,
+      avatarUrl: 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(fullName)}&background=0D8ABC&color=fff',
+      roundedBottom: roundedBottom,
+      bottomContent: bottomContent,
     );
   }
 
   Widget _buildHomeTab() {
+    final docProvider = Provider.of<DocumentProvider>(context);
+    final docsList = docProvider.documents;
+
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -423,7 +232,11 @@ class _DashboardPageState extends State<DashboardPage> {
                           ),
                         ),
                         GestureDetector(
-                          onTap: () {},
+                          onTap: () {
+                            setState(() {
+                              _selectedIndex = 1;
+                            });
+                          },
                           child: Text(
                             'View All',
                             style: GoogleFonts.inter(
@@ -438,21 +251,33 @@ class _DashboardPageState extends State<DashboardPage> {
                     const SizedBox(height: 16),
 
                     // Documents List
-                    _buildDocumentCard(
-                      title: 'COSC Society Q4 2025 Expense Report',
-                      date: 'Mar 15, 2026',
-                      hash: 'a3f2...c8b1',
-                    ),
-                    _buildDocumentCard(
-                      title: 'Tech Summit 2026 Event Budget Proposal',
-                      date: 'Mar 14, 2026',
-                      hash: 'b7d9...e4a2',
-                    ),
-                    _buildDocumentCard(
-                      title: 'COSC Membership Fee Collection - S.Y. 2025-2026',
-                      date: 'Mar 12, 2026',
-                      hash: 'c105...f5d3',
-                    ),
+                    if (docsList.isEmpty) ...[
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 40),
+                        alignment: Alignment.center,
+                        child: Column(
+                          children: [
+                            Icon(Icons.folder_open_outlined, size: 48, color: Colors.grey.shade300),
+                            const SizedBox(height: 12),
+                            Text(
+                              'No recent documents available',
+                              style: GoogleFonts.inter(
+                                fontSize: 13,
+                                color: Colors.grey.shade400,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ] else ...[
+                      ...docsList.take(3).map((doc) => _buildDocumentCard(
+                        title: doc.documentTitle,
+                        date: _formatDate(doc.submissionDate),
+                        hash: _getHash(doc),
+                      )),
+                    ],
                     const SizedBox(height: 32),
 
                     // Financial Overview Header
@@ -651,7 +476,7 @@ class _DashboardPageState extends State<DashboardPage> {
               ),
               const SizedBox(height: 24),
               Text(
-                'Quick Actions',
+                'Upload Financial Document',
                 style: GoogleFonts.inter(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -660,52 +485,79 @@ class _DashboardPageState extends State<DashboardPage> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Select an operation to manage organization funds',
+                'Submit a new document for COSC Society audit trail',
                 style: GoogleFonts.inter(
                   fontSize: 13,
                   color: Colors.grey.shade500,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
               const SizedBox(height: 24),
               _buildBottomSheetItem(
-                icon: Icons.cloud_upload_outlined,
-                color: Colors.blue.shade600,
-                title: 'Upload Financial Document',
-                subtitle: 'Submit Q1-Q4 expense reports, budgets, or official receipts',
+                icon: Icons.description_outlined,
+                title: 'Expense Report',
+                subtitle: 'Quarterly or monthly expense summary',
                 onTap: () {
                   Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Document upload flow started.')),
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const UploadPage(category: 'Expense Report'),
+                    ),
                   );
                 },
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               _buildBottomSheetItem(
-                icon: Icons.auto_awesome_outlined,
-                color: Colors.purple.shade600,
-                title: 'AI Document Scan & Extract',
-                subtitle: 'Extract values and check audit compliance using AI model',
+                icon: Icons.attach_money_outlined,
+                title: 'Budget Proposal',
+                subtitle: 'Event or project budget for approval',
                 onTap: () {
                   Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('AI extraction scan started.')),
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const UploadPage(category: 'Budget Proposal'),
+                    ),
                   );
                 },
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               _buildBottomSheetItem(
-                icon: Icons.gpp_good_outlined,
-                color: const Color(0xFF10B981),
-                title: 'Verify SHA-256 Hash Integrity',
-                subtitle: 'Check if document hashes match registration records',
+                icon: Icons.receipt_long_outlined,
+                title: 'Receipt / Invoice',
+                subtitle: 'Individual transaction proof',
                 onTap: () {
                   Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Hash verification started.')),
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const UploadPage(category: 'Receipt / Invoice'),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 12),
+              _buildBottomSheetItem(
+                icon: Icons.security_outlined,
+                title: 'Audit Certificate',
+                subtitle: 'External or internal audit document',
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const UploadPage(category: 'Audit Certificate'),
+                    ),
                   );
                 },
               ),
               const SizedBox(height: 24),
+              SecondaryButton(
+                label: 'Cancel',
+                onPressed: () => Navigator.pop(context),
+              ),
+              const SizedBox(height: 8),
             ],
           ),
         );
@@ -715,7 +567,6 @@ class _DashboardPageState extends State<DashboardPage> {
 
   Widget _buildBottomSheetItem({
     required IconData icon,
-    required Color color,
     required String title,
     required String subtitle,
     required VoidCallback onTap,
@@ -723,28 +574,21 @@ class _DashboardPageState extends State<DashboardPage> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: const Color(0xFFF8FAFC),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.grey.shade100),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.02),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          border: Border.all(color: const Color(0xFFF1F5F9), width: 1),
         ),
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
+                color: VeriFiColors.secondaryEE,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(icon, color: color, size: 24),
+              child: Icon(icon, color: VeriFiColors.primary, size: 24),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -763,16 +607,13 @@ class _DashboardPageState extends State<DashboardPage> {
                   Text(
                     subtitle,
                     style: GoogleFonts.inter(
-                      fontSize: 11,
+                      fontSize: 12,
                       color: Colors.grey.shade500,
                     ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
             ),
-            Icon(Icons.chevron_right, color: Colors.grey.shade400, size: 18),
           ],
         ),
       ),
@@ -786,25 +627,17 @@ class _DashboardPageState extends State<DashboardPage> {
     required String status,
     VoidCallback? onTap,
   }) {
-    Color badgeBg;
-    Color badgeText;
     IconData iconData = Icons.receipt_long_outlined;
     Color iconColor;
     Color iconBg;
 
     if (status.toUpperCase() == 'APPROVED') {
-      badgeBg = const Color(0xFFE6F4EA);
-      badgeText = const Color(0xFF137333);
       iconColor = const Color(0xFF10B981);
       iconBg = const Color(0xFFE6F4EA);
     } else if (status.toUpperCase() == 'PENDING') {
-      badgeBg = const Color(0xFFFEF7E0);
-      badgeText = const Color(0xFFB06000);
       iconColor = const Color(0xFFF59E0B);
       iconBg = const Color(0xFFFEF7E0);
     } else {
-      badgeBg = const Color(0xFFFCE8E6);
-      badgeText = const Color(0xFFC5221F);
       iconColor = const Color(0xFFEF4444);
       iconBg = const Color(0xFFFCE8E6);
     }
@@ -908,21 +741,7 @@ class _DashboardPageState extends State<DashboardPage> {
               ),
             ),
             const SizedBox(width: 12),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: badgeBg,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                status,
-                style: GoogleFonts.inter(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: badgeText,
-                ),
-              ),
-            ),
+            VeriFiStatusBadge(status: status),
             const SizedBox(width: 4),
             Icon(Icons.chevron_right, color: Colors.grey.shade400, size: 20),
           ],
@@ -1032,270 +851,169 @@ class _DashboardPageState extends State<DashboardPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Elegant Header (custom dark theme, wallet feel)
-          Container(
-            width: double.infinity,
-            decoration: const BoxDecoration(
-              color: Color(0xFF0F172A), // Slate 900
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(32),
-                bottomRight: Radius.circular(32),
+          VeriFiProfileHeader(
+            name: fullName,
+            role: 'Officer',
+            isDashboardStyle: true,
+            backgroundColor: const Color(0xFF0F172A),
+            initials: initials,
+            onNotificationTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const NotificationsPage(),
+                ),
+              );
+            },
+            notificationCount: 3,
+            bottomContent: Container(
+              margin: const EdgeInsets.only(top: 8),
+              width: double.infinity,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF3B48F6), Color(0xFF6366F1), Color(0xFF4F46E5)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF3B48F6).withValues(alpha: 0.3),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
               ),
-            ),
-            padding: EdgeInsets.only(
-              top: MediaQuery.of(context).padding.top + 20,
-              left: 24,
-              right: 24,
-              bottom: 32,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        // Glassmorphic status ring avatar
-                        Container(
-                          padding: const EdgeInsets.all(2),
-                          decoration: const BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: LinearGradient(
-                              colors: [Color(0xFF3B48F6), Color(0xFF10B981)],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                          ),
-                          child: CircleAvatar(
-                            radius: 22,
-                            backgroundColor: const Color(0xFF1E293B),
-                            child: Text(
-                              initials,
-                              style: GoogleFonts.inter(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        '$orgName Wallet',
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          color: Colors.white.withValues(alpha: 0.8),
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.5,
                         ),
-                        const SizedBox(width: 12),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '${_getGreeting()}, Officer',
-                              style: GoogleFonts.inter(
-                                fontSize: 12,
-                                color: const Color(0xFF94A3B8), // slate-400
-                                fontWeight: FontWeight.w500,
-                              ),
+                      ),
+                      // Premium Gold Chip
+                      Container(
+                        width: 36,
+                        height: 26,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFD700).withValues(alpha: 0.85),
+                          borderRadius: BorderRadius.circular(6),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.1),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
                             ),
-                            const SizedBox(height: 2),
-                            Text(
-                              fullName,
-                              style: GoogleFonts.inter(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
+                          ],
+                        ),
+                        child: Stack(
+                          children: [
+                            Positioned(
+                              top: 6,
+                              left: 6,
+                              child: Container(
+                                width: 24,
+                                height: 14,
+                                decoration: BoxDecoration(
+                                  border: Border.all(color: Colors.orange.shade700.withValues(alpha: 0.4), width: 0.5),
+                                  borderRadius: BorderRadius.circular(2),
+                                ),
                               ),
                             ),
                           ],
                         ),
-                      ],
-                    ),
-                    // Notification Icon with pulsing dot
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const NotificationsPage(),
-                          ),
-                        );
-                      },
-                      child: Stack(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.06),
-                              shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white.withValues(alpha: 0.1), width: 1),
-                            ),
-                            child: const Icon(Icons.notifications_none, color: Colors.white, size: 22),
-                          ),
-                          Positioned(
-                            right: 2,
-                            top: 2,
-                            child: Container(
-                              width: 10,
-                              height: 10,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFEF4444),
-                                shape: BoxShape.circle,
-                                border: Border.all(color: const Color(0xFF0F172A), width: 1.5),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 28),
-
-                // E-Wallet Balance Card
-                Container(
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF3B48F6), Color(0xFF6366F1), Color(0xFF4F46E5)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(24),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF3B48F6).withValues(alpha: 0.3),
-                        blurRadius: 20,
-                        offset: const Offset(0, 10),
                       ),
                     ],
                   ),
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
+                  const SizedBox(height: 12),
+                  Text(
+                    'Available Allocation',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      color: Colors.white70,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _formatCurrency(remaining),
+                    style: GoogleFonts.inter(
+                      fontSize: 34,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  // Spent details and progress bar
+                  Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            '$orgName Wallet',
+                            'Spent: ${_formatCurrency(spent)}',
                             style: GoogleFonts.inter(
-                              fontSize: 12,
+                              fontSize: 11,
                               color: Colors.white.withValues(alpha: 0.8),
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: 0.5,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
-                          // Premium Gold Chip
-                          Container(
-                            width: 36,
-                            height: 26,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFFD700).withValues(alpha: 0.85),
-                              borderRadius: BorderRadius.circular(6),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.1),
-                                  blurRadius: 4,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: Stack(
-                              children: [
-                                Positioned(
-                                  top: 6,
-                                  left: 6,
-                                  child: Container(
-                                    width: 24,
-                                    height: 14,
-                                    decoration: BoxDecoration(
-                                      border: Border.all(color: Colors.orange.shade700.withValues(alpha: 0.4), width: 0.5),
-                                      borderRadius: BorderRadius.circular(2),
-                                    ),
-                                  ),
-                                ),
-                              ],
+                          Text(
+                            '${(spentPercent * 100).toInt()}%',
+                            style: GoogleFonts.inter(
+                              fontSize: 11,
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Available Allocation',
-                        style: GoogleFonts.inter(
-                          fontSize: 12,
-                          color: Colors.white70,
-                          fontWeight: FontWeight.w500,
+                      const SizedBox(height: 6),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: LinearProgressIndicator(
+                          value: spentPercent.clamp(0.0, 1.0),
+                          minHeight: 5,
+                          backgroundColor: Colors.white.withValues(alpha: 0.15),
+                          valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
                         ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        _formatCurrency(remaining),
-                        style: GoogleFonts.inter(
-                          fontSize: 34,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                          letterSpacing: -0.5,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      // Spent details and progress bar
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                'Spent: ${_formatCurrency(spent)}',
-                                style: GoogleFonts.inter(
-                                  fontSize: 11,
-                                  color: Colors.white.withValues(alpha: 0.8),
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              Text(
-                                '${(spentPercent * 100).toInt()}%',
-                                style: GoogleFonts.inter(
-                                  fontSize: 11,
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 6),
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(4),
-                            child: LinearProgressIndicator(
-                              value: spentPercent.clamp(0.0, 1.0),
-                              minHeight: 5,
-                              backgroundColor: Colors.white.withValues(alpha: 0.15),
-                              valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
-                      // Card quick actions row (glassmorphic style)
-                      Row(
-                        children: [
-                          _buildCardAction(Icons.arrow_upward, 'Disburse', () {
-                            _showUploadBottomSheet(context);
-                          }),
-                          const SizedBox(width: 10),
-                          _buildCardAction(Icons.arrow_downward, 'Request', () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Budget request form is being prepared.')),
-                            );
-                          }),
-                          const SizedBox(width: 10),
-                          _buildCardAction(Icons.history, 'History', () {
-                            setState(() {
-                              _selectedIndex = 1; // Switch to Documents Tab
-                            });
-                          }),
-                        ],
                       ),
                     ],
                   ),
-                ),
-              ],
+                  const SizedBox(height: 24),
+                  // Card quick actions row (glassmorphic style)
+                  Row(
+                    children: [
+                      _buildCardAction(Icons.arrow_upward, 'Disburse', () {
+                        _showUploadBottomSheet(context);
+                      }),
+                      const SizedBox(width: 10),
+                      _buildCardAction(Icons.arrow_downward, 'Request', () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Budget request form is being prepared.')),
+                        );
+                      }),
+                      const SizedBox(width: 10),
+                      _buildCardAction(Icons.history, 'History', () {
+                        setState(() {
+                          _selectedIndex = 1; // Switch to Documents Tab
+                        });
+                      }),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
 
@@ -1982,6 +1700,9 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Widget _buildDocumentsTab() {
+    final docProvider = Provider.of<DocumentProvider>(context);
+    final docsList = docProvider.documents;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1995,48 +1716,9 @@ class _DashboardPageState extends State<DashboardPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Search & Filter
-                Row(
-                  children: [
-                    Expanded(
-                      child: Container(
-                        height: 46,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(24),
-                          border: Border.all(color: Colors.grey.shade300),
-                        ),
-                        child: TextField(
-                          decoration: InputDecoration(
-                            hintText: 'Search',
-                            hintStyle: GoogleFonts.inter(
-                              color: Colors.grey.shade400,
-                              fontSize: 14,
-                            ),
-                            prefixIcon: Icon(Icons.search, color: Colors.grey.shade400, size: 20),
-                            border: InputBorder.none,
-                            contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                          ),
-                          style: GoogleFonts.inter(
-                            fontSize: 14,
-                            color: Colors.grey.shade800,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    // Filter Button
-                    Container(
-                      height: 46,
-                      width: 46,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.grey.shade300),
-                      ),
-                      child: Icon(Icons.filter_list, color: Colors.grey.shade600, size: 20),
-                    ),
-                  ],
+                VeriFiSearchComponent(
+                  hintText: 'Search',
+                  onFilterPressed: () {},
                 ),
                 const SizedBox(height: 32),
 
@@ -2051,45 +1733,35 @@ class _DashboardPageState extends State<DashboardPage> {
                 ),
                 const SizedBox(height: 16),
 
-                // Documents List with variations
-                _buildDocumentCard(
-                  title: 'COSC Society Q4 2025 Expense Report',
-                  date: 'Mar 15, 2026',
-                  hash: 'a3f2...c8b1',
-                  showChevron: true,
-                ),
-                _buildDocumentCard(
-                  title: 'Tech Summit 2026 Event Budget Proposal',
-                  date: 'Mar 14, 2026',
-                  hash: 'b7d9...e4a2',
-                  showChevron: true,
-                ),
-                _buildDocumentCard(
-                  title: 'COSC Membership Fee Collection - S.Y. 2025-2026',
-                  date: 'Mar 12, 2026',
-                  hash: 'c1e8...f5d3',
-                  showChevron: true,
-                ),
-                _buildDocumentCard(
-                  title: 'SSC-COSC Joint Sponsorship Agreement',
-                  date: 'Mar 10, 2026',
-                  hash: 'd4f7...a6c4',
-                  isNew: true,
-                  showChevron: true,
-                ),
-                _buildDocumentCard(
-                  title: 'COSC Membership Fee Collection - S.Y. 2025-2026',
-                  date: 'Mar 12, 2026',
-                  hash: 'c1e8...f5d3',
-                  showChevron: true,
-                ),
-                _buildDocumentCard(
-                  title: 'SSC-COSC Joint Sponsorship Agreement',
-                  date: 'Mar 10, 2026',
-                  hash: 'd4f7...a6c4',
-                  isNew: true,
-                  showChevron: true,
-                ),
+                // Documents List
+                if (docsList.isEmpty) ...[
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 40),
+                    alignment: Alignment.center,
+                    child: Column(
+                      children: [
+                        Icon(Icons.folder_open_outlined, size: 48, color: Colors.grey.shade300),
+                        const SizedBox(height: 12),
+                        Text(
+                          'No documents in database yet',
+                          style: GoogleFonts.inter(
+                            fontSize: 13,
+                            color: Colors.grey.shade400,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ] else ...[
+                  ...docsList.map((doc) => _buildDocumentCard(
+                    title: doc.documentTitle,
+                    date: _formatDate(doc.submissionDate),
+                    hash: _getHash(doc),
+                    showChevron: true,
+                  )),
+                ],
               ],
             ),
           ),
@@ -2207,48 +1879,9 @@ class _DashboardPageState extends State<DashboardPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Search & Filter
-                Row(
-                  children: [
-                    Expanded(
-                      child: Container(
-                        height: 46,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(24),
-                          border: Border.all(color: Colors.grey.shade300),
-                        ),
-                        child: TextField(
-                          decoration: InputDecoration(
-                            hintText: 'Search',
-                            hintStyle: GoogleFonts.inter(
-                              color: Colors.grey.shade400,
-                              fontSize: 14,
-                            ),
-                            prefixIcon: Icon(Icons.search, color: Colors.grey.shade400, size: 20),
-                            border: InputBorder.none,
-                            contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                          ),
-                          style: GoogleFonts.inter(
-                            fontSize: 14,
-                            color: Colors.grey.shade800,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    // Filter Button
-                    Container(
-                      height: 46,
-                      width: 46,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.grey.shade300),
-                      ),
-                      child: Icon(Icons.filter_list, color: Colors.grey.shade600, size: 20),
-                    ),
-                  ],
+                VeriFiSearchComponent(
+                  hintText: 'Search',
+                  onFilterPressed: () {},
                 ),
                 const SizedBox(height: 32),
 
@@ -2399,69 +2032,12 @@ class _DashboardPageState extends State<DashboardPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // Avatar
-                Container(
-                  width: 80,
-                  height: 80,
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: LinearGradient(
-                      colors: [Color(0xFF3B48F6), Color(0xFF0EA5E9)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                  ),
-                  child: Center(
-                    child: Text(
-                      initials,
-                      style: GoogleFonts.inter(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                
-                // Name and Email
-                Text(
-                  fullName,
-                  style: GoogleFonts.inter(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFF1F2937),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  email,
-                  style: GoogleFonts.inter(
-                    fontSize: 13,
-                    color: Colors.grey.shade500,
-                  ),
-                ),
-                const SizedBox(height: 12),
-
-                // Badge
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      isOfficer ? Icons.verified_user : Icons.shield_outlined, 
-                      color: isOfficer ? const Color(0xFF10B981) : Colors.blue.shade600, 
-                      size: 16
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      isOfficer ? 'Authorized Officer' : 'Authorized Member',
-                      style: GoogleFonts.inter(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: isOfficer ? const Color(0xFF10B981) : Colors.blue.shade600,
-                      ),
-                    ),
-                  ],
+                VeriFiProfileHeader(
+                  name: fullName,
+                  role: roleName,
+                  subtitle: email,
+                  initials: initials,
+                  isDashboardStyle: false,
                 ),
                 const SizedBox(height: 32),
 

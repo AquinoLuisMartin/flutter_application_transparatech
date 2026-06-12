@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_application_transparatech/core/theme/verifi_theme.dart';
+import 'package:flutter_application_transparatech/core/widgets/widgets.dart';
 import 'package:flutter_application_transparatech/features/auth/presentation/providers/auth_provider.dart';
 import 'package:flutter_application_transparatech/features/auth/presentation/pages/auth_page.dart' as auth;
 import 'package:flutter_application_transparatech/features/dashboard/presentation/pages/notifications_page.dart';
@@ -250,124 +252,28 @@ class AdminHomeScreen extends StatelessWidget {
     final user = authProvider.currentUser;
     final String fullName = user != null ? '${user.firstName} ${user.lastName}' : 'Admin User';
 
-    return Container(
-      width: double.infinity,
-      decoration: const BoxDecoration(
-        color: Color(0xFF132A42), // Matches DashboardPage header
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(24),
-          bottomRight: Radius.circular(24),
-        ),
-      ),
-      padding: EdgeInsets.only(
-        top: MediaQuery.of(context).padding.top + 20,
-        left: 24,
-        right: 24,
-        bottom: 40,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'System Overview',
-                      style: GoogleFonts.inter(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w400,
-                        color: Colors.white.withValues(alpha: 0.7),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      fullName,
-                      style: GoogleFonts.inter(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      user?.email ?? 'admin@pup.edu.ph',
-                      style: GoogleFonts.inter(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.white.withValues(alpha: 0.6),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Row(
-                children: [
-                  // Notification Bell
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const NotificationsPage(),
-                        ),
-                      );
-                    },
-                    child: Stack(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.1),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(Icons.notifications_none, color: Colors.white, size: 22),
-                        ),
-                        Positioned(
-                          right: 0,
-                          top: 0,
-                          child: Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: const BoxDecoration(
-                              color: Colors.redAccent,
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Text(
-                              '4',
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  // Profile Avatar
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: const Color(0xFF3B48F6), width: 2),
-                      image: DecorationImage(
-                        image: NetworkImage('https://ui-avatars.com/api/?name=${Uri.encodeComponent(fullName)}&background=0D8ABC&color=fff'),
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
+    return VeriFiProfileHeader(
+      name: fullName,
+      role: 'Admin',
+      isDashboardStyle: true,
+      greeting: 'System Overview',
+      onNotificationTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const NotificationsPage(),
           ),
-        ],
+        );
+      },
+      notificationCount: 4,
+      avatarUrl: 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(fullName)}&background=0D8ABC&color=fff',
+      bottomContent: Text(
+        user?.email ?? 'admin@pup.edu.ph',
+        style: GoogleFonts.inter(
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+          color: Colors.white.withValues(alpha: 0.6),
+        ),
       ),
     );
   }
@@ -375,24 +281,27 @@ class AdminHomeScreen extends StatelessWidget {
   Widget _buildPendingSubmissions() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(VeriFiSpacing.s16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
+        color: VeriFiColors.surface,
+        borderRadius: BorderRadius.circular(VeriFiBorderRadius.cards),
+        border: Border.all(color: const Color(0xFFEEF2FF), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'Pending Submissions(4)',
-            style: GoogleFonts.inter(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: const Color(0xFF1F2937),
-            ),
+            style: VeriFiTypography.sectionTitle,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: VeriFiSpacing.s16),
           _buildPendingCard(
             title: 'Tech Summit 2026 Event Budget',
             organization: 'iSITE Organization',
@@ -406,7 +315,7 @@ class AdminHomeScreen extends StatelessWidget {
             submitter: 'John Doe',
             category: 'Audit Report',
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: VeriFiSpacing.s16),
           Center(
             child: _buildSeeMoreButton(),
           ),
@@ -421,37 +330,17 @@ class AdminHomeScreen extends StatelessWidget {
     required String submitter,
     required String category,
   }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade100),
-      ),
-      child: Column(
+    return VeriFiCard(
+      icon: const Icon(Icons.hourglass_empty, color: VeriFiColors.warning),
+      title: title,
+      description: '$organization | $submitter',
+      status: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: GoogleFonts.inter(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: const Color(0xFF1F2937),
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            '$organization | $submitter',
-            style: GoogleFonts.inter(
-              fontSize: 12,
-              color: Colors.grey.shade500,
-            ),
-          ),
-          const SizedBox(height: 8),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: Colors.blue.shade50,
+              color: VeriFiColors.secondaryEE,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
@@ -459,31 +348,31 @@ class AdminHomeScreen extends StatelessWidget {
               style: GoogleFonts.inter(
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
-                color: Colors.blue.shade600,
+                color: VeriFiColors.primary,
               ),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: VeriFiSpacing.s16),
           Row(
             children: [
               _buildActionButton(
-                label: 'View Document',
+                label: 'View',
                 icon: Icons.visibility_outlined,
-                backgroundColor: Colors.blue.shade50,
-                textColor: Colors.blue.shade600,
+                backgroundColor: VeriFiColors.secondaryEE,
+                textColor: VeriFiColors.primary,
               ),
               const SizedBox(width: 8),
               _buildActionButton(
                 label: 'Approve',
                 icon: Icons.thumb_up_outlined,
-                backgroundColor: const Color(0xFF10B981),
+                backgroundColor: VeriFiColors.success,
                 textColor: Colors.white,
               ),
               const SizedBox(width: 8),
               _buildActionButton(
                 label: 'Reject',
                 icon: Icons.thumb_down_outlined,
-                backgroundColor: const Color(0xFFEF4444),
+                backgroundColor: VeriFiColors.error,
                 textColor: Colors.white,
               ),
             ],
@@ -496,24 +385,27 @@ class AdminHomeScreen extends StatelessWidget {
   Widget _buildRecentApprovals() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(VeriFiSpacing.s16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
+        color: VeriFiColors.surface,
+        borderRadius: BorderRadius.circular(VeriFiBorderRadius.cards),
+        border: Border.all(color: const Color(0xFFEEF2FF), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'Recent Approvals(18)',
-            style: GoogleFonts.inter(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: const Color(0xFF1F2937),
-            ),
+            style: VeriFiTypography.sectionTitle,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: VeriFiSpacing.s16),
           _buildApprovalCard(
             title: 'COSC Society Q4 2025 Expense',
             organization: 'iSITE Organization',
@@ -527,7 +419,7 @@ class AdminHomeScreen extends StatelessWidget {
             submitter: 'Alicia Keys',
             category: 'Financial Report',
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: VeriFiSpacing.s16),
           Center(
             child: _buildSeeMoreButton(),
           ),
@@ -542,86 +434,26 @@ class AdminHomeScreen extends StatelessWidget {
     required String submitter,
     required String category,
   }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade100),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: const BoxDecoration(
-              color: Color(0xFFD1FAE5),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.check, color: Color(0xFF059669), size: 16),
+    return VeriFiCard(
+      icon: const Icon(Icons.check_circle_outline, color: VeriFiColors.success),
+      title: title,
+      description: '$organization | $submitter',
+      status: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: VeriFiColors.secondaryEE,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Text(
+          category,
+          style: GoogleFonts.inter(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: VeriFiColors.primary,
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: GoogleFonts.inter(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFF1F2937),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '$organization | $submitter',
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    color: Colors.grey.shade500,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF10B981),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        'Approved',
-                        style: GoogleFonts.inter(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.blue.shade50,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        category,
-                        style: GoogleFonts.inter(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.blue.shade600,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
+        ),
       ),
+      action: const VeriFiStatusBadge(status: 'Approved'),
     );
   }
 
@@ -636,7 +468,7 @@ class AdminHomeScreen extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 8),
         decoration: BoxDecoration(
           color: backgroundColor,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(VeriFiBorderRadius.buttons),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -661,7 +493,7 @@ class AdminHomeScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.grey.shade200,
+        color: VeriFiColors.secondaryEE,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
@@ -669,7 +501,7 @@ class AdminHomeScreen extends StatelessWidget {
         style: GoogleFonts.inter(
           fontSize: 12,
           fontWeight: FontWeight.w600,
-          color: Colors.grey.shade600,
+          color: VeriFiColors.primary,
         ),
       ),
     );

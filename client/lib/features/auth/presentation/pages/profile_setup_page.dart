@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:io';
-import 'package:flutter_application_transparatech/core/widgets/custom_text_form_field.dart';
+import 'package:flutter_application_transparatech/core/theme/verifi_theme.dart';
+import 'package:flutter_application_transparatech/core/widgets/widgets.dart';
 import 'account_verification_page.dart';
 import 'auth_page.dart';
 
@@ -187,36 +188,12 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: 16.0),
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.grey.shade50,
-              shape: BoxShape.circle,
-            ),
-            child: IconButton(
-              icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black54, size: 18),
-              onPressed: () => Navigator.pop(context),
-            ),
-          ),
-        ),
-        leadingWidth: 64,
-        title: Text(
-          'Profile Setup',
-          style: GoogleFonts.inter(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
-          ),
-        ),
-        centerTitle: false,
+      backgroundColor: VeriFiColors.background,
+      appBar: const AppBarWidget(
+        title: 'Profile Setup',
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: VeriFiSpacing.s24, vertical: VeriFiSpacing.s16),
         child: Form(
           key: _formKey,
           child: Column(
@@ -430,52 +407,33 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
 
               const SizedBox(height: 48),
 
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: () {
-                    if (_formKey.currentState!.validate() &&
-                        _isPhotoSelected &&
-                        _isStudentIdSelected) {
-                      // Navigate to verification page
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => AccountVerificationPage(
-                            email: widget.email,
-                            studentId: widget.studentId,
-                            fullName: _fullNameController.text,
-                            token: widget.token,
-                            password: widget.password,
-                          ),
+              PrimaryButton(
+                label: 'Next',
+                onPressed: () {
+                  if (_formKey.currentState!.validate() &&
+                      _isPhotoSelected &&
+                      _isStudentIdSelected) {
+                    // Navigate to verification page
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => AccountVerificationPage(
+                          email: widget.email,
+                          studentId: widget.studentId,
+                          fullName: _fullNameController.text,
+                          token: widget.token,
+                          password: widget.password,
                         ),
-                      );
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Please complete all required fields'),
-                        ),
-                      );
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue.shade600,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 3,
-                    shadowColor: Colors.blue.withValues(alpha: 0.3),
-                  ),
-                  child: Text(
-                    'Next →',
-                    style: GoogleFonts.inter(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
+                      ),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Please complete all required fields'),
+                      ),
+                    );
+                  }
+                },
               ),
 
               const SizedBox(height: 24),

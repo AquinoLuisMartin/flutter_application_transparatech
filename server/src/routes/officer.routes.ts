@@ -67,7 +67,7 @@ router.get('/stats', verifyToken, async (req: any, res) => {
     
     const organizationId = user[0]?.organizationId;
 
-    // Get document counts by status
+    // Get document counts by status for the organization
     const stats = await db
       .select({
         status: documentStatuses.statusName,
@@ -75,14 +75,16 @@ router.get('/stats', verifyToken, async (req: any, res) => {
       })
       .from(documents)
       .innerJoin(documentStatuses, eq(documents.statusId, documentStatuses.statusId))
-      .where(and(eq(documents.uploadedBy, accountId), eq(documents.isDeleted, 0)))
+      .innerJoin(accounts, eq(documents.uploadedBy, accounts.accountId))
+      .where(and(eq(accounts.organizationId, organizationId), eq(documents.isDeleted, 0)))
       .groupBy(documentStatuses.statusName);
 
-    // Get total active documents
+    // Get total active documents for the organization
     const totalDocsResult = await db
       .select({ count: sql<number>`count(*)` })
       .from(documents)
-      .where(and(eq(documents.uploadedBy, accountId), eq(documents.isDeleted, 0)));
+      .innerJoin(accounts, eq(documents.uploadedBy, accounts.accountId))
+      .where(and(eq(accounts.organizationId, organizationId), eq(documents.isDeleted, 0)));
 
     const totalActive = totalDocsResult[0]?.count || 0;
 
@@ -136,19 +138,27 @@ router.get('/documents', verifyToken, async (req: any, res) => {
     const accountId = req.user.accountId;
     const { search } = req.query;
 
-    let conditions = [
-      eq(documents.uploadedBy, accountId),
-      eq(documents.isDeleted, 0)
-    ];
+    // Get user's organizationId
+    const user = await db
+      .select({
+        organizationId: accounts.organizationId,
+      })
+      .from(accounts)
+      .where(eq(accounts.accountId, accountId))
+      .limit(1);
 
-    if (search) {
-      conditions.push(
-        or(
+    const organizationId = user[0]?.organizationId;
+
+    if (!organizationId) {
+      return res.status(404).json({ error: 'User is not assigned to any organization' });
+    }
+
+    let searchCondition = search
+      ? or(
           like(documents.documentTitle, `%${search}%`),
           like(documents.documentDescription, `%${search}%`)
-        ) as any
-      );
-    }
+        )
+      : undefined;
 
     const docs = await db
       .select({
@@ -164,7 +174,12 @@ router.get('/documents', verifyToken, async (req: any, res) => {
       })
       .from(documents)
       .innerJoin(documentStatuses, eq(documents.statusId, documentStatuses.statusId))
-      .where(and(...conditions))
+      .innerJoin(accounts, eq(documents.uploadedBy, accounts.accountId))
+      .where(and(
+        eq(accounts.organizationId, organizationId),
+        eq(documents.isDeleted, 0),
+        searchCondition
+      ))
       .orderBy(desc(documents.submissionDate));
 
     res.json(docs);
