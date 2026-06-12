@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_application_transparatech/features/auth/presentation/providers/auth_provider.dart';
+import 'package:flutter_application_transparatech/features/auth/presentation/pages/auth_page.dart' as auth;
 import 'package:flutter_application_transparatech/features/dashboard/presentation/pages/notifications_page.dart';
 
 class AdminDashboardPage extends StatefulWidget {
@@ -212,7 +213,7 @@ class AdminHomeScreen extends StatelessWidget {
         Provider.of<AuthProvider>(context, listen: false).signOut();
         Navigator.pushAndRemoveUntil(
           context,
-          MaterialPageRoute(builder: (context) => AuthPage()),
+          MaterialPageRoute(builder: (context) => auth.AuthPage()),
           (route) => false,
         );
       },
