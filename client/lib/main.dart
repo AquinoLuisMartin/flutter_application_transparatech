@@ -8,6 +8,8 @@ import 'package:flutter_application_transparatech/core/utils/logger.dart';
 import 'package:flutter_application_transparatech/core/config/build_config.dart';
 
 import 'package:flutter_application_transparatech/core/theme/verifi_theme.dart';
+import 'package:flutter_application_transparatech/core/providers/theme_provider.dart';
+import 'package:flutter_application_transparatech/features/admin/presentation/providers/admin_queue_provider.dart';
 
 void main() {
   // Initialize logger and logging
@@ -19,6 +21,8 @@ void main() {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => DocumentProvider()),
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => AdminQueueProvider()),
       ],
       child: const MyApp(),
     ),
@@ -30,12 +34,13 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
     return MaterialApp(
       title: 'VeriFi',
       debugShowCheckedModeBanner: false,
       theme: VeriFiTheme.lightTheme,
       darkTheme: VeriFiTheme.darkTheme,
-      themeMode: ThemeMode.system,
+      themeMode: themeProvider.themeMode,
       home: const LandingPage(),
       routes: {
         '/login': (context) => const AuthPage(),
