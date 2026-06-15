@@ -104,8 +104,11 @@ class LandingPage extends StatelessWidget {
                         ),
                       );
                     } catch (e) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Error: $e')),
+                      showAlertDialog(
+                        context: context,
+                        title: 'Error',
+                        message: e.toString(),
+                        isError: true,
                       );
                     }
                   },

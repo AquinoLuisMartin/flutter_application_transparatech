@@ -198,21 +198,21 @@ class _SignUpFormPageState extends State<SignUpFormPage> {
           ),
         );
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(response.data['error'] ?? 'Signup failed'),
-            backgroundColor: Colors.red,
-          ),
+        showAlertDialog(
+          context: context,
+          title: 'Signup Failed',
+          message: response.data['error'] ?? 'Signup failed',
+          isError: true,
         );
       }
     } catch (e) {
       AppLogger.error('Signup error: $e', tag: 'SignUp');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
+        showAlertDialog(
+          context: context,
+          title: 'Signup Error',
+          message: e.toString(),
+          isError: true,
         );
       }
     } finally {

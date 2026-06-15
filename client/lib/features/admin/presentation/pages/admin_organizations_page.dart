@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_application_transparatech/core/theme/verifi_theme.dart';
+import 'package:flutter_application_transparatech/core/widgets/widgets.dart';
 import 'package:flutter_application_transparatech/features/auth/presentation/providers/auth_provider.dart';
 import 'package:flutter_application_transparatech/core/providers/theme_provider.dart';
 import 'package:flutter_application_transparatech/features/admin/presentation/widgets/profile_dropdown.dart';
@@ -373,19 +374,11 @@ class _AdminOrganizationsScreenState extends State<AdminOrganizationsScreen> {
 
                   Navigator.pop(dialogContext);
 
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Row(
-                        children: [
-                          const Icon(Icons.check_circle, color: Colors.white),
-                          const SizedBox(width: 8),
-                          Text('Added $newAcronym successfully!', style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
-                        ],
-                      ),
-                      backgroundColor: VeriFiColors.success,
-                      behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    ),
+                  showAlertDialog(
+                    context: context,
+                    title: 'Organization Added',
+                    message: 'Added $newAcronym successfully!',
+                    isSuccess: true,
                   );
                 }
               },

@@ -42,23 +42,12 @@ class _AdminQueueScreenState extends State<AdminQueueScreen> {
         ? 'Submission approved successfully' 
         : 'Submission rejected';
     
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Icon(
-              newStatus == 'APPROVED' ? Icons.check_circle : Icons.cancel, 
-              color: Colors.white,
-            ),
-            const SizedBox(width: 8),
-            Text(message, style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
-          ],
-        ),
-        backgroundColor: newStatus == 'APPROVED' ? VeriFiColors.success : VeriFiColors.error,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        duration: const Duration(seconds: 2),
-      ),
+    showAlertDialog(
+      context: context,
+      title: newStatus == 'APPROVED' ? 'Submission Approved' : 'Submission Rejected',
+      message: message,
+      isSuccess: newStatus == 'APPROVED',
+      isError: newStatus != 'APPROVED',
     );
   }
 
@@ -1051,11 +1040,10 @@ class _AdminQueueScreenState extends State<AdminQueueScreen> {
                       width: double.infinity,
                       child: ElevatedButton.icon(
                         onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Opening file preview for "${item.title}"...'),
-                              duration: const Duration(seconds: 1),
-                            ),
+                          showAlertDialog(
+                            context: context,
+                            title: 'Preview Document',
+                            message: 'Opening file preview for "${item.title}"...',
                           );
                         },
                         icon: const Icon(Icons.visibility_outlined, size: 18),
@@ -1076,11 +1064,11 @@ class _AdminQueueScreenState extends State<AdminQueueScreen> {
                       width: double.infinity,
                       child: OutlinedButton.icon(
                         onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Downloading file "${item.title}" (${item.fileSize})...'),
-                              duration: const Duration(seconds: 1),
-                            ),
+                          showAlertDialog(
+                            context: context,
+                            title: 'Download Started',
+                            message: 'Downloading file "${item.title}" (${item.fileSize})...',
+                            isSuccess: true,
                           );
                         },
                         icon: const Icon(Icons.download_outlined, size: 18),

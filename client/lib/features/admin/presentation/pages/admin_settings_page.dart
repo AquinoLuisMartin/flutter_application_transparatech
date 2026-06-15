@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_application_transparatech/core/theme/verifi_theme.dart';
+import 'package:flutter_application_transparatech/core/widgets/widgets.dart';
 import 'package:flutter_application_transparatech/core/providers/theme_provider.dart';
 
 import 'package:flutter_application_transparatech/features/admin/presentation/pages/admin_roles_permissions_page.dart';
@@ -177,41 +178,17 @@ class AdminSettingsScreen extends StatelessWidget {
     return GestureDetector(
       onTap: disabled
           ? () {
-              ScaffoldMessenger.of(context).clearSnackBars();
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Row(
-                    children: [
-                      Icon(icon, color: Colors.white, size: 16),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          '$title has moved to Account Settings.',
-                          style: GoogleFonts.inter(fontWeight: FontWeight.w500),
-                        ),
-                      ),
-                    ],
-                  ),
-                  backgroundColor: const Color(0xFF3B48F6),
-                  behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ),
+              showAlertDialog(
+                context: context,
+                title: 'Moved Setting',
+                message: '$title has moved to Account Settings.',
               );
             }
           : (onTap ?? () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Row(
-                    children: [
-                      Icon(icon, color: Colors.white, size: 16),
-                      const SizedBox(width: 8),
-                      Text('Opening $title details...', style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
-                    ],
-                  ),
-                  backgroundColor: const Color(0xFF3B48F6),
-                  behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ),
+              showAlertDialog(
+                context: context,
+                title: 'Settings',
+                message: 'Opening $title details...',
               );
             }),
       child: Opacity(

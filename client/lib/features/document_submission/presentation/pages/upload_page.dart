@@ -236,8 +236,11 @@ class _UploadPageState extends State<UploadPage> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error selecting document: $e')),
+        showAlertDialog(
+          context: context,
+          title: 'Selection Error',
+          message: 'Error selecting document: $e',
+          isError: true,
         );
       }
     }
@@ -266,11 +269,11 @@ class _UploadPageState extends State<UploadPage> {
   Future<void> _handleSubmit() async {
     if (_formKey.currentState!.validate()) {
       if (_selectedFileName == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please select or upload a document first.'),
-            backgroundColor: VeriFiColors.error,
-          ),
+        showAlertDialog(
+          context: context,
+          title: 'Missing File',
+          message: 'Please select or upload a document first.',
+          isError: true,
         );
         return;
       }
@@ -287,11 +290,11 @@ class _UploadPageState extends State<UploadPage> {
         setState(() {
           _isSubmitting = false;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Session expired. Please log in again.'),
-            backgroundColor: VeriFiColors.error,
-          ),
+        showAlertDialog(
+          context: context,
+          title: 'Session Expired',
+          message: 'Session expired. Please log in again.',
+          isError: true,
         );
         return;
       }
@@ -330,19 +333,21 @@ class _UploadPageState extends State<UploadPage> {
         });
 
         if (success) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('${widget.category} successfully submitted to audit trail!'),
-              backgroundColor: VeriFiColors.success,
-            ),
+          showAlertDialog(
+            context: context,
+            title: 'Submission Success',
+            message: '${widget.category} successfully submitted to audit trail!',
+            isSuccess: true,
+            onPressed: () {
+              Navigator.pop(context);
+            },
           );
-          Navigator.pop(context);
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(docProvider.errorMessage ?? 'Failed to submit document.'),
-              backgroundColor: VeriFiColors.error,
-            ),
+          showAlertDialog(
+            context: context,
+            title: 'Submission Failed',
+            message: docProvider.errorMessage ?? 'Failed to submit document.',
+            isError: true,
           );
         }
       }
@@ -600,8 +605,11 @@ class _UploadPageState extends State<UploadPage> {
                         // Check validation locally before showing modal
                         if (!_formKey.currentState!.validate()) return;
                         if (_selectedFileName == null) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Please select a file to upload')),
+                          showAlertDialog(
+                            context: context,
+                            title: 'Missing File',
+                            message: 'Please select a file to upload',
+                            isError: true,
                           );
                           return;
                         }

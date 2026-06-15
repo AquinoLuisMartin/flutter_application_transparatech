@@ -591,3 +591,94 @@ void showConfirmationDialog({
     },
   );
 }
+
+/// Standard system-wide alert dialog for displaying messages, errors, or success confirmations
+void showAlertDialog({
+  required BuildContext context,
+  required String title,
+  required String message,
+  VoidCallback? onPressed,
+  String buttonText = 'OK',
+  bool isError = false,
+  bool isSuccess = false,
+}) {
+  final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+  final isDark = themeProvider.isDarkMode;
+
+  showDialog(
+    context: context,
+    barrierDismissible: true,
+    builder: (BuildContext context) {
+      IconData iconData = Icons.info_outline;
+      Color iconColor = VeriFiColors.primary;
+      if (isError) {
+        iconData = Icons.error_outline_rounded;
+        iconColor = VeriFiColors.error;
+      } else if (isSuccess) {
+        iconData = Icons.check_circle_outline_rounded;
+        iconColor = VeriFiColors.success;
+      }
+
+      return AlertDialog(
+        backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: VeriFiBorderRadius.modalsRadius,
+        ),
+        title: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(VeriFiSpacing.s16),
+              decoration: BoxDecoration(
+                color: isError
+                    ? VeriFiColors.error.withValues(alpha: 0.1)
+                    : (isSuccess
+                        ? VeriFiColors.success.withValues(alpha: 0.1)
+                        : VeriFiColors.primary.withValues(alpha: 0.1)),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                iconData,
+                color: iconColor,
+                size: 36,
+              ),
+            ),
+            const SizedBox(height: VeriFiSpacing.s16),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.inter(
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+                color: isDark ? Colors.white : VeriFiColors.textDark,
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          message,
+          textAlign: TextAlign.center,
+          style: GoogleFonts.inter(
+            fontSize: 14,
+            color: isDark ? Colors.grey.shade300 : VeriFiColors.textGrey,
+          ),
+        ),
+        actionsAlignment: MainAxisAlignment.center,
+        actions: [
+          PrimaryButton(
+            label: buttonText,
+            width: double.infinity,
+            height: 48,
+            onPressed: () {
+              Navigator.pop(context);
+              if (onPressed != null) {
+                onPressed();
+              }
+            },
+          ),
+        ],
+      );
+    },
+  );
+}
+

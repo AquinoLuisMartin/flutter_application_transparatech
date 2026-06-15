@@ -834,19 +834,11 @@ class _AdminRolesPermissionsScreenState extends State<AdminRolesPermissionsScree
                   message: 'Are you sure you want to apply these role permission changes?',
                   confirmText: 'Save Changes',
                   onConfirm: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Row(
-                          children: [
-                            const Icon(Icons.check_circle, color: Colors.white),
-                            const SizedBox(width: 8),
-                            Text('Role changes saved successfully.', style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
-                          ],
-                        ),
-                        backgroundColor: VeriFiColors.success,
-                        behavior: SnackBarBehavior.floating,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      ),
+                    showAlertDialog(
+                      context: context,
+                      title: 'Role Changes Saved',
+                      message: 'Role changes saved successfully.',
+                      isSuccess: true,
                     );
                   },
                 );
@@ -1042,19 +1034,11 @@ class _AdminRolesPermissionsScreenState extends State<AdminRolesPermissionsScree
                                     ElevatedButton.icon(
                                       onPressed: () {
                                         queueProvider.restoreUser(user);
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(
-                                            content: Row(
-                                              children: [
-                                                const Icon(Icons.restore, color: Colors.white),
-                                                const SizedBox(width: 8),
-                                                Text('${user.fullName} restored successfully.', style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
-                                              ],
-                                            ),
-                                            backgroundColor: const Color(0xFF22C55E),
-                                            behavior: SnackBarBehavior.floating,
-                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                          ),
+                                        showAlertDialog(
+                                          context: context,
+                                          title: 'User Restored',
+                                          message: '${user.fullName} restored successfully.',
+                                          isSuccess: true,
                                         );
                                       },
                                       icon: const Icon(Icons.settings_backup_restore, size: 14),

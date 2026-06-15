@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_application_transparatech/core/providers/theme_provider.dart';
+import 'package:flutter_application_transparatech/core/widgets/widgets.dart';
 import 'package:flutter_application_transparatech/features/admin/presentation/pages/admin_personal_info_page.dart';
 import 'package:flutter_application_transparatech/features/admin/presentation/pages/admin_notification_settings_page.dart';
 import 'package:flutter_application_transparatech/features/admin/presentation/pages/admin_security_privacy_page.dart';
@@ -39,25 +40,12 @@ class _AdminAccountSettingsScreenState extends State<AdminAccountSettingsScreen>
     );
   }
 
-  // Standard helper to show snackbars for not implemented settings options
-  void _showNotImplementedSnackBar(BuildContext context, String featureName) {
-    ScaffoldMessenger.of(context).clearSnackBars();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.info_outline, color: Colors.white, size: 16),
-            const SizedBox(width: 8),
-            Text(
-              '$featureName settings are not implemented yet.',
-              style: GoogleFonts.inter(fontWeight: FontWeight.w500),
-            ),
-          ],
-        ),
-        backgroundColor: const Color(0xFF3B48F6),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      ),
+  // Standard helper to show alerts for not implemented settings options
+  void _showNotImplementedAlert(BuildContext context, String featureName) {
+    showAlertDialog(
+      context: context,
+      title: 'Under Construction',
+      message: '$featureName settings are not implemented yet.',
     );
   }
 
@@ -109,7 +97,7 @@ class _AdminAccountSettingsScreenState extends State<AdminAccountSettingsScreen>
                       context: context,
                       label: 'Translation',
                       iconWidget: _buildTranslationIcon(const Color(0xFF374151)),
-                      onTap: () => _showNotImplementedSnackBar(context, 'Translation'),
+                      onTap: () => _showNotImplementedAlert(context, 'Translation'),
                     ),
 
                     // Notifications option

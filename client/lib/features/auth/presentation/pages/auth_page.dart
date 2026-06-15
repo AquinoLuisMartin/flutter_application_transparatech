@@ -95,8 +95,11 @@ class _AuthPageState extends State<AuthPage> {
           );
         }
       } else if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(authProvider.errorMessage ?? 'Login failed')),
+        showAlertDialog(
+          context: context,
+          title: 'Login Failed',
+          message: authProvider.errorMessage ?? 'Invalid email or password',
+          isError: true,
         );
       }
     }

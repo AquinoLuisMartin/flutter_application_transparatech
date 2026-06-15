@@ -102,8 +102,11 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error picking photo: $e')),
+        showAlertDialog(
+          context: context,
+          title: 'Photo Error',
+          message: 'Error picking photo: $e',
+          isError: true,
         );
       }
     }
@@ -147,8 +150,11 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error picking image: $e')),
+        showAlertDialog(
+          context: context,
+          title: 'Image Error',
+          message: 'Error picking image: $e',
+          isError: true,
         );
       }
     }
@@ -448,10 +454,11 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
                       ),
                     );
                   } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Please complete all required fields'),
-                      ),
+                    showAlertDialog(
+                      context: context,
+                      title: 'Incomplete Fields',
+                      message: 'Please complete all required fields',
+                      isError: true,
                     );
                   }
                 },

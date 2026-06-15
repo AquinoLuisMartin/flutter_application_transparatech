@@ -58,11 +58,11 @@ class _AccountVerificationPageState extends State<AccountVerificationPage> {
     } catch (e) {
       AppLogger.error('Error completing setup: $e', tag: 'Verification');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: Colors.red,
-          ),
+        showAlertDialog(
+          context: context,
+          title: 'Setup Error',
+          message: 'Error: $e',
+          isError: true,
         );
       }
     } finally {

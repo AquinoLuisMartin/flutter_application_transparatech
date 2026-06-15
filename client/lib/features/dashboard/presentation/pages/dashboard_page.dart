@@ -807,11 +807,10 @@ class _DashboardPageState extends State<DashboardPage> {
 
     return GestureDetector(
       onTap: onTap ?? () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Details for: $title'),
-            duration: const Duration(seconds: 2),
-          ),
+        showAlertDialog(
+          context: context,
+          title: 'Activity Details',
+          message: 'Details for: $title',
         );
       },
       child: Container(
@@ -1126,8 +1125,10 @@ class _DashboardPageState extends State<DashboardPage> {
                         }),
                         const SizedBox(width: 10),
                         _buildCardAction(Icons.arrow_downward, 'Request', () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Budget request form is being prepared.')),
+                          showAlertDialog(
+                            context: context,
+                            title: 'Request Budget',
+                            message: 'Budget request form is being prepared.',
                           );
                         }),
                         const SizedBox(width: 10),

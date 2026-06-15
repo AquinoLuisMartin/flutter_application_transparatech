@@ -91,13 +91,15 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                     onPressed: () {
                       if (_formKey.currentState!.validate()) {
                         // Simulate API call for password reset
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Password reset link sent to your email.'),
-                            backgroundColor: VeriFiColors.success,
-                          ),
+                        showAlertDialog(
+                          context: context,
+                          title: 'Link Sent',
+                          message: 'Password reset link sent to your email.',
+                          isSuccess: true,
+                          onPressed: () {
+                            Navigator.pop(context);
+                          },
                         );
-                        Navigator.pop(context);
                       }
                     },
                   ),

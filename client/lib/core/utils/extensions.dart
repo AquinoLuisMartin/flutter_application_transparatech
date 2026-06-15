@@ -4,6 +4,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_application_transparatech/core/widgets/widgets.dart';
 
 /// String extensions
 extension StringExtensions on String {
@@ -60,16 +61,15 @@ extension BuildContextExtensions on BuildContext {
 
   ColorScheme get colorScheme => Theme.of(this).colorScheme;
 
-  /// Show snackbar
+  /// Show snackbar (Refactored to show standard popup modal for consistency)
   void showSnackBar(
     String message, {
     Duration duration = const Duration(seconds: 2),
   }) {
-    ScaffoldMessenger.of(this).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        duration: duration,
-      ),
+    showAlertDialog(
+      context: this,
+      title: 'Alert',
+      message: message,
     );
   }
 
