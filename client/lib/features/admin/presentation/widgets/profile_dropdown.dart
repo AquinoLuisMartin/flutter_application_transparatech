@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_application_transparatech/core/theme/verifi_theme.dart';
+import 'package:flutter_application_transparatech/core/widgets/common_widgets.dart';
 import 'package:flutter_application_transparatech/features/auth/presentation/providers/auth_provider.dart';
 import 'package:flutter_application_transparatech/features/auth/presentation/pages/auth_page.dart' as auth;
 import 'package:flutter_application_transparatech/features/admin/presentation/pages/admin_settings_page.dart';
@@ -135,13 +136,20 @@ void showProfileDropdown(BuildContext context) {
                 dense: true,
                 onTap: () {
                   Navigator.pop(context);
-                  // Sign out logic
-                  Provider.of<AuthProvider>(context, listen: false).signOut();
-                  // Re-route to login
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(builder: (context) => const auth.AuthPage()),
-                    (route) => false,
+                  showConfirmationDialog(
+                    context: context,
+                    title: 'Confirm Logout',
+                    message: 'Are you sure you want to log out?',
+                    confirmText: 'Log Out',
+                    isDestructive: true,
+                    onConfirm: () {
+                      Provider.of<AuthProvider>(context, listen: false).signOut();
+                      Navigator.pushAndRemoveUntil(
+                        context,
+                        MaterialPageRoute(builder: (context) => const auth.AuthPage()),
+                        (route) => false,
+                      );
+                    },
                   );
                 },
               ),

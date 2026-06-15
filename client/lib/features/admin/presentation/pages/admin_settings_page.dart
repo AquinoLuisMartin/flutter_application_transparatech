@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_application_transparatech/core/theme/verifi_theme.dart';
 import 'package:flutter_application_transparatech/core/providers/theme_provider.dart';
-import 'package:flutter_application_transparatech/features/admin/presentation/pages/admin_dashboard_page.dart';
+
 import 'package:flutter_application_transparatech/features/admin/presentation/pages/admin_roles_permissions_page.dart';
 import 'package:flutter_application_transparatech/features/admin/presentation/pages/admin_audit_logs_page.dart';
 import 'package:flutter_application_transparatech/features/admin/presentation/pages/admin_general_settings_page.dart';
@@ -115,58 +115,6 @@ class AdminSettingsScreen extends StatelessWidget {
             ),
           ),
         ],
-      ),
-      // 4. Fixed Bottom Navigation Bar (Inactive state representation)
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 20,
-              offset: const Offset(0, -5),
-            ),
-          ],
-        ),
-        child: BottomNavigationBar(
-          currentIndex: 0, // Inactive visual state logic
-          onTap: (index) {
-            // Functional redirect back to active tab
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(builder: (context) => AdminDashboardPage(initialIndex: index)),
-              (route) => false,
-            );
-          },
-          type: BottomNavigationBarType.fixed,
-          backgroundColor: themeProvider.isDarkMode ? const Color(0xFF1E293B) : Colors.white,
-          selectedItemColor: themeProvider.isDarkMode ? Colors.grey.shade500 : Colors.grey.shade400, // force inactive muted color
-          unselectedItemColor: themeProvider.isDarkMode ? Colors.grey.shade500 : Colors.grey.shade400, // force inactive muted color
-          selectedLabelStyle: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w500),
-          unselectedLabelStyle: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w500),
-          elevation: 0,
-          items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.home_outlined),
-              label: 'Home',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.queue_outlined),
-              label: 'Queue',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.analytics_outlined),
-              label: 'Analytics',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.business_outlined),
-              label: 'Organization',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.people_outline),
-              label: 'Users',
-            ),
-          ],
-        ),
       ),
     );
   }

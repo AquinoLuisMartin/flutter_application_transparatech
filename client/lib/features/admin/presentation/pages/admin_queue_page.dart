@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:flutter_application_transparatech/core/theme/verifi_theme.dart';
 import 'package:flutter_application_transparatech/features/auth/presentation/providers/auth_provider.dart';
 import 'package:flutter_application_transparatech/core/providers/theme_provider.dart';
+import 'package:flutter_application_transparatech/core/widgets/common_widgets.dart';
 import 'package:flutter_application_transparatech/features/admin/presentation/providers/admin_queue_provider.dart';
 import 'package:flutter_application_transparatech/features/admin/presentation/widgets/profile_dropdown.dart';
 import 'package:flutter_application_transparatech/features/admin/presentation/widgets/admin_notification_bell.dart';
@@ -34,69 +35,7 @@ class _AdminQueueScreenState extends State<AdminQueueScreen> {
     );
   }
 
-  void _showConfirmationDialog({
-    required BuildContext context,
-    required String action,
-    required VoidCallback onConfirm,
-  }) {
-    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        final isApprove = action == 'approve';
-        return AlertDialog(
-          backgroundColor: themeProvider.isDarkMode ? const Color(0xFF1E293B) : Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Text(
-            isApprove ? 'Confirm Approval' : 'Confirm Rejection',
-            style: GoogleFonts.inter(
-              fontWeight: FontWeight.bold, 
-              fontSize: 16, 
-              color: themeProvider.isDarkMode ? Colors.white : VeriFiColors.textDark,
-            ),
-          ),
-          content: Text(
-            isApprove 
-                ? 'Do you want to approve this submission?' 
-                : 'Do you want to reject this submission?',
-            style: GoogleFonts.inter(
-              fontSize: 14, 
-              color: themeProvider.isDarkMode ? Colors.grey.shade300 : VeriFiColors.textGrey,
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(
-                'Cancel',
-                style: GoogleFonts.inter(
-                  fontWeight: FontWeight.w600, 
-                  color: themeProvider.isDarkMode ? Colors.grey.shade400 : VeriFiColors.textLight,
-                ),
-              ),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pop(context);
-                onConfirm();
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: isApprove ? VeriFiColors.success : VeriFiColors.error,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              ),
-              child: Text(
-                'Confirm',
-                style: GoogleFonts.inter(fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
+
 
   void _showStatusMessage(BuildContext context, String newStatus) {
     final String message = newStatus == 'APPROVED' 
@@ -789,9 +728,11 @@ class _AdminQueueScreenState extends State<AdminQueueScreen> {
                     Expanded(
                       child: GestureDetector(
                         onTap: () {
-                          _showConfirmationDialog(
+                          showConfirmationDialog(
                             context: context,
-                            action: 'approve',
+                            title: 'Confirm Approval',
+                            message: 'Do you want to approve this submission?',
+                            confirmText: 'Confirm',
                             onConfirm: () {
                               queueProvider.updateSubmissionStatus(item.id, 'APPROVED');
                               _showStatusMessage(context, 'APPROVED');
@@ -831,9 +772,12 @@ class _AdminQueueScreenState extends State<AdminQueueScreen> {
                     Expanded(
                       child: GestureDetector(
                         onTap: () {
-                          _showConfirmationDialog(
+                          showConfirmationDialog(
                             context: context,
-                            action: 'reject',
+                            title: 'Confirm Rejection',
+                            message: 'Do you want to reject this submission?',
+                            confirmText: 'Confirm',
+                            isDestructive: true,
                             onConfirm: () {
                               queueProvider.updateSubmissionStatus(item.id, 'REJECTED');
                               _showStatusMessage(context, 'REJECTED');
@@ -1164,9 +1108,11 @@ class _AdminQueueScreenState extends State<AdminQueueScreen> {
                             child: GestureDetector(
                               onTap: () {
                                 Navigator.pop(context);
-                                _showConfirmationDialog(
+                                showConfirmationDialog(
                                   context: context,
-                                  action: 'approve',
+                                  title: 'Confirm Approval',
+                                  message: 'Do you want to approve this submission?',
+                                  confirmText: 'Confirm',
                                   onConfirm: () {
                                     queueProvider.updateSubmissionStatus(item.id, 'APPROVED');
                                     _showStatusMessage(context, 'APPROVED');
@@ -1203,9 +1149,12 @@ class _AdminQueueScreenState extends State<AdminQueueScreen> {
                             child: GestureDetector(
                               onTap: () {
                                 Navigator.pop(context);
-                                _showConfirmationDialog(
+                                showConfirmationDialog(
                                   context: context,
-                                  action: 'reject',
+                                  title: 'Confirm Rejection',
+                                  message: 'Do you want to reject this submission?',
+                                  confirmText: 'Confirm',
+                                  isDestructive: true,
                                   onConfirm: () {
                                     queueProvider.updateSubmissionStatus(item.id, 'REJECTED');
                                     _showStatusMessage(context, 'REJECTED');

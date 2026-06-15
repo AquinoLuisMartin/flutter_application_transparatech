@@ -97,7 +97,7 @@ class LandingPage extends StatelessWidget {
                   icon: Icons.arrow_forward,
                   onPressed: () {
                     try {
-                      Navigator.push(
+                      Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
                           builder: (context) => const WelcomeScreen(),

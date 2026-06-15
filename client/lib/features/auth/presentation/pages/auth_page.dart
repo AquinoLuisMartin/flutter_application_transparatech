@@ -253,7 +253,7 @@ class _AuthPageState extends State<AuthPage> {
                   Center(
                     child: TextButton(
                       onPressed: () {
-                        Navigator.push(
+                        Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
                             builder: (context) => const SignUpFormPage(),

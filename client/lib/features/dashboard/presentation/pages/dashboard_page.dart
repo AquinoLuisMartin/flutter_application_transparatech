@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_application_transparatech/core/theme/verifi_theme.dart';
 import 'package:flutter_application_transparatech/core/widgets/widgets.dart';
+
 import 'package:flutter_application_transparatech/features/auth/presentation/providers/auth_provider.dart';
 import 'package:flutter_application_transparatech/features/document_analysis/presentation/providers/document_provider.dart';
 import 'package:flutter_application_transparatech/features/document_analysis/data/models/document_model.dart';
@@ -2375,11 +2376,20 @@ class _DashboardPageState extends State<DashboardPage> {
                   const SizedBox(height: 16),
                   GestureDetector(
                     onTap: () {
-                      Provider.of<AuthProvider>(context, listen: false).signOut();
-                      Navigator.pushAndRemoveUntil(
-                        context,
-                        MaterialPageRoute(builder: (context) => const AuthPage()),
-                        (route) => false,
+                      showConfirmationDialog(
+                        context: context,
+                        title: 'Confirm Logout',
+                        message: 'Are you sure you want to log out?',
+                        confirmText: 'Log Out',
+                        isDestructive: true,
+                        onConfirm: () {
+                          Provider.of<AuthProvider>(context, listen: false).signOut();
+                          Navigator.pushAndRemoveUntil(
+                            context,
+                            MaterialPageRoute(builder: (context) => const AuthPage()),
+                            (route) => false,
+                          );
+                        },
                       );
                     },
                     child: _buildActionRow(context, Icons.logout, 'Log Out', Colors.redAccent, isDestructive: true),

@@ -6,6 +6,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_application_transparatech/core/theme/verifi_theme.dart';
 import 'package:flutter_application_transparatech/core/widgets/widgets.dart';
+
 import 'package:flutter_application_transparatech/features/auth/presentation/providers/auth_provider.dart';
 import 'package:flutter_application_transparatech/features/document_analysis/presentation/providers/document_provider.dart';
 
@@ -595,7 +596,24 @@ class _UploadPageState extends State<UploadPage> {
                     // Submit button
                     PrimaryButton(
                       label: 'Submit',
-                      onPressed: _handleSubmit,
+                      onPressed: () {
+                        // Check validation locally before showing modal
+                        if (!_formKey.currentState!.validate()) return;
+                        if (_selectedFileName == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Please select a file to upload')),
+                          );
+                          return;
+                        }
+                        
+                        showConfirmationDialog(
+                          context: context,
+                          title: 'Confirm Submission',
+                          message: 'Are you sure you want to submit this document for review?',
+                          confirmText: 'Submit',
+                          onConfirm: _handleSubmit,
+                        );
+                      },
                       isLoading: _isSubmitting,
                     ),
                     const SizedBox(height: 16),
