@@ -5,6 +5,8 @@ import 'package:flutter_application_transparatech/features/auth/presentation/pro
 import 'package:flutter_application_transparatech/core/providers/theme_provider.dart';
 import 'package:flutter_application_transparatech/features/admin/presentation/widgets/profile_dropdown.dart';
 import 'package:flutter_application_transparatech/features/admin/presentation/widgets/admin_notification_bell.dart';
+import 'package:flutter_application_transparatech/features/admin/presentation/providers/admin_queue_provider.dart';
+
 
 class AdminAnalyticsScreen extends StatefulWidget {
   final Function(int index, {String? orgFilter})? onNavigateToTab;
@@ -34,35 +36,103 @@ class _AdminAnalyticsScreenState extends State<AdminAnalyticsScreen> {
   String _activeFilter = 'Last 7 Days';
   int _activeTooltipIndex = -1;
 
-  final Map<String, List<BarChartData>> _filterChartData = {
-    'Last 7 Days': [
-      BarChartData(day: 'Mon', approved: 12, rejected: 2, reviewTimeMin: 18),
-      BarChartData(day: 'Tue', approved: 15, rejected: 3, reviewTimeMin: 21),
-      BarChartData(day: 'Wed', approved: 14, rejected: 1, reviewTimeMin: 19),
-      BarChartData(day: 'Thu', approved: 18, rejected: 4, reviewTimeMin: 22),
-      BarChartData(day: 'Fri', approved: 22, rejected: 2, reviewTimeMin: 17),
-      BarChartData(day: 'Sat', approved: 8, rejected: 1, reviewTimeMin: 15),
-      BarChartData(day: 'Sun', approved: 6, rejected: 0, reviewTimeMin: 14),
-    ],
-    'Last 30 Days': [
-      BarChartData(day: 'W1', approved: 58, rejected: 12, reviewTimeMin: 20),
-      BarChartData(day: 'W2', approved: 65, rejected: 8, reviewTimeMin: 18),
-      BarChartData(day: 'W3', approved: 72, rejected: 15, reviewTimeMin: 19),
-      BarChartData(day: 'W4', approved: 80, rejected: 10, reviewTimeMin: 17),
-    ],
-    'This Year': [
-      BarChartData(day: 'Q1', approved: 220, rejected: 35, reviewTimeMin: 19),
-      BarChartData(day: 'Q2', approved: 245, rejected: 40, reviewTimeMin: 20),
-      BarChartData(day: 'Q3', approved: 210, rejected: 28, reviewTimeMin: 18),
-      BarChartData(day: 'Q4', approved: 280, rejected: 50, reviewTimeMin: 17),
-    ],
-    'All Time': [
-      BarChartData(day: '23', approved: 450, rejected: 85, reviewTimeMin: 22),
-      BarChartData(day: '24', approved: 620, rejected: 95, reviewTimeMin: 20),
-      BarChartData(day: '25', approved: 840, rejected: 110, reviewTimeMin: 19),
-      BarChartData(day: '26', approved: 980, rejected: 130, reviewTimeMin: 18),
-    ],
-  };
+  List<BarChartData> _getDynamicChartData(List<QueueSubmission> submissions) {
+    final now = DateTime.now();
+    
+    if (_activeFilter == 'Last 7 Days') {
+      final List<BarChartData> list = [];
+      final weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+      
+      for (int i = 6; i >= 0; i--) {
+        final date = now.subtract(Duration(days: i));
+        final dayName = weekdays[date.weekday - 1];
+        
+        final daySubmissions = submissions.where((s) {
+          return s.uploadDate.year == date.year &&
+                 s.uploadDate.month == date.month &&
+                 s.uploadDate.day == date.day;
+        }).toList();
+        
+        final approved = daySubmissions.where((s) => s.status == 'APPROVED').length;
+        final rejected = daySubmissions.where((s) => s.status == 'REJECTED').length;
+        
+        list.add(BarChartData(
+          day: dayName,
+          approved: approved,
+          rejected: rejected,
+          reviewTimeMin: daySubmissions.isNotEmpty ? 15 + (daySubmissions.length * 2) : 0,
+        ));
+      }
+      return list;
+    }
+    
+    if (_activeFilter == 'Last 30 Days') {
+      final List<BarChartData> list = [];
+      for (int w = 3; w >= 0; w--) {
+        final startOffset = w * 7 + 7;
+        final endOffset = w * 7;
+        final startDate = now.subtract(Duration(days: startOffset));
+        final endDate = now.subtract(Duration(days: endOffset));
+        
+        final weekSubmissions = submissions.where((s) {
+          return s.uploadDate.isAfter(startDate) && s.uploadDate.isBefore(endDate.add(const Duration(days: 1)));
+        }).toList();
+        
+        final approved = weekSubmissions.where((s) => s.status == 'APPROVED').length;
+        final rejected = weekSubmissions.where((s) => s.status == 'REJECTED').length;
+        
+        list.add(BarChartData(
+          day: 'W${4 - w}',
+          approved: approved,
+          rejected: rejected,
+          reviewTimeMin: weekSubmissions.isNotEmpty ? 18 + (weekSubmissions.length) : 0,
+        ));
+      }
+      return list;
+    }
+    
+    if (_activeFilter == 'This Year') {
+      final List<BarChartData> list = [];
+      for (int q = 1; q <= 4; q++) {
+        final qSubmissions = submissions.where((s) {
+          if (s.uploadDate.year != now.year) return false;
+          final quarter = ((s.uploadDate.month - 1) ~/ 3) + 1;
+          return quarter == q;
+        }).toList();
+        
+        final approved = qSubmissions.where((s) => s.status == 'APPROVED').length;
+        final rejected = qSubmissions.where((s) => s.status == 'REJECTED').length;
+        
+        list.add(BarChartData(
+          day: 'Q$q',
+          approved: approved,
+          rejected: rejected,
+          reviewTimeMin: qSubmissions.isNotEmpty ? 16 + q : 0,
+        ));
+      }
+      return list;
+    }
+    
+    if (_activeFilter == 'All Time') {
+      final List<BarChartData> list = [];
+      final years = [2024, 2025, 2026, 2027];
+      for (final yr in years) {
+        final yrSubmissions = submissions.where((s) => s.uploadDate.year == yr).toList();
+        final approved = yrSubmissions.where((s) => s.status == 'APPROVED').length;
+        final rejected = yrSubmissions.where((s) => s.status == 'REJECTED').length;
+        
+        list.add(BarChartData(
+          day: yr.toString().substring(2),
+          approved: approved,
+          rejected: rejected,
+          reviewTimeMin: yrSubmissions.isNotEmpty ? 20 : 0,
+        ));
+      }
+      return list;
+    }
+    
+    return [];
+  }
 
   String _getVelocityTitle() {
     switch (_activeFilter) {
@@ -82,7 +152,9 @@ class _AdminAnalyticsScreenState extends State<AdminAnalyticsScreen> {
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
-    final activeData = _filterChartData[_activeFilter] ?? _filterChartData['Last 7 Days']!;
+    final queueProvider = Provider.of<AdminQueueProvider>(context);
+    final activeData = _getDynamicChartData(queueProvider.submissions);
+
 
     return Scaffold(
       backgroundColor: themeProvider.isDarkMode ? const Color(0xFF0F172A) : const Color(0xFFF8F9FB),
@@ -543,6 +615,20 @@ class _AdminAnalyticsScreenState extends State<AdminAnalyticsScreen> {
   }
 
   Widget _buildRequestsByOrgWidget(BuildContext context, ThemeProvider themeProvider) {
+    final queueProvider = Provider.of<AdminQueueProvider>(context);
+    final submissions = queueProvider.submissions;
+
+    final orgMap = <String, List<QueueSubmission>>{};
+    for (final s in submissions) {
+      final org = s.organization.toUpperCase();
+      orgMap.putIfAbsent(org, () => []).add(s);
+    }
+    
+    final activeOrgs = orgMap.keys.toList()..sort();
+    if (activeOrgs.isEmpty) {
+      activeOrgs.addAll(['ACES', 'ISITE', 'AFT', 'DOMT', 'JPIA']);
+    }
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -573,23 +659,27 @@ class _AdminAnalyticsScreenState extends State<AdminAnalyticsScreen> {
           ),
           const SizedBox(height: 20),
 
-          _buildOrgRow('ACES', 200, 50, 300, themeProvider),
-          const SizedBox(height: 16),
-          _buildOrgRow('iSITE', 140, 40, 220, themeProvider),
-          const SizedBox(height: 16),
-          _buildOrgRow('AFT', 100, 30, 180, themeProvider),
-          const SizedBox(height: 16),
-          _buildOrgRow('DOMT', 70, 20, 120, themeProvider),
-          const SizedBox(height: 16),
-          _buildOrgRow('JPCS', 50, 15, 90, themeProvider),
+          ...activeOrgs.map((acronym) {
+            final orgSubmissions = orgMap[acronym] ?? [];
+            final approved = orgSubmissions.where((s) => s.status == 'APPROVED').length;
+            final flagged = orgSubmissions.where((s) => s.status == 'REJECTED' || s.flags.isNotEmpty).length;
+            final total = orgSubmissions.length;
+            
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 16.0),
+              child: _buildOrgRow(acronym, approved, flagged, total, themeProvider),
+            );
+          }),
         ],
       ),
     );
   }
 
   Widget _buildOrgRow(String acronym, int approved, int flagged, int totalCount, ThemeProvider themeProvider) {
-    final int maxCap = 300;
-    final int remaining = maxCap - approved - flagged;
+    final int displayTotal = totalCount > 0 ? totalCount : 1;
+    final int displayApproved = approved;
+    final int displayFlagged = flagged;
+    final int remaining = displayTotal - displayApproved - displayFlagged;
 
     return GestureDetector(
       onTap: () {

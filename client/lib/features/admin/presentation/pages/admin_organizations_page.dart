@@ -6,6 +6,8 @@ import 'package:flutter_application_transparatech/features/auth/presentation/pro
 import 'package:flutter_application_transparatech/core/providers/theme_provider.dart';
 import 'package:flutter_application_transparatech/features/admin/presentation/widgets/profile_dropdown.dart';
 import 'package:flutter_application_transparatech/features/admin/presentation/widgets/admin_notification_bell.dart';
+import 'package:flutter_application_transparatech/core/network/http_client.dart';
+
 
 class MockOfficer {
   final String role;
@@ -63,12 +65,17 @@ class _AdminOrganizationsScreenState extends State<AdminOrganizationsScreen> {
   final TextEditingController _searchController = TextEditingController();
   DateTimeRange? _selectedDateRange;
 
+  List<OrganizationItem> _allOrganizations = [];
+  bool _isLoading = false;
+  String? _errorMessage;
+
   @override
   void initState() {
     super.initState();
     if (widget.initialSearchQuery != null) {
       _searchController.text = widget.initialSearchQuery!;
     }
+    _fetchOrganizations();
   }
 
   @override
@@ -81,123 +88,82 @@ class _AdminOrganizationsScreenState extends State<AdminOrganizationsScreen> {
     }
   }
 
-  // Mock initial organizations data list with the 7 required entities
-  final List<OrganizationItem> _allOrganizations = [
-    OrganizationItem(
-      fullName: 'Alliance of Computer Engineering Students',
-      acronym: 'ACES',
-      memberCount: 231,
-      status: 'ACTIVE',
-      icon: Icons.memory,
-      officers: [
-        const MockOfficer(role: 'President', name: 'Aaron James P. Alarcon', contact: 'aaron.alarcon@student.tpt.edu'),
-        const MockOfficer(role: 'VP', name: 'Beatrix M. Santos', contact: 'beatrix.santos@student.tpt.edu'),
-        const MockOfficer(role: 'Treasurer', name: 'Charles D. Reyes', contact: 'charles.reyes@student.tpt.edu'),
-      ],
-      documents: [
-        const MockDocument(title: 'ACES Q1 2026 Audit Report', date: 'June 12, 2026', status: 'APPROVED'),
-        const MockDocument(title: 'ACES Constitution Revision', date: 'May 15, 2026', status: 'REJECTED'),
-        const MockDocument(title: 'ACES General Assembly Proposal', date: 'April 10, 2026', status: 'APPROVED'),
-      ],
-    ),
-    OrganizationItem(
-      fullName: 'Integrated Students in Information Technology Education',
-      acronym: 'iSITE',
-      memberCount: 409,
-      status: 'ACTIVE',
-      icon: Icons.lan_outlined,
-      officers: [
-        const MockOfficer(role: 'President', name: 'David K. Cruz', contact: 'david.cruz@student.tpt.edu'),
-        const MockOfficer(role: 'VP', name: 'Ellayssa Aguilar', contact: 'ellayssa.aguilar@student.tpt.edu'),
-        const MockOfficer(role: 'Treasurer', name: 'Fiona G. Diaz', contact: 'fiona.diaz@student.tpt.edu'),
-      ],
-      documents: [
-        const MockDocument(title: 'iSITE Member Roster Update', date: 'June 10, 2026', status: 'APPROVED'),
-        const MockDocument(title: 'iSITE Tech Seminar Budget', date: 'May 20, 2026', status: 'APPROVED'),
-        const MockDocument(title: 'iSITE Web Server Funding', date: 'April 28, 2026', status: 'REJECTED'),
-      ],
-    ),
-    OrganizationItem(
-      fullName: 'Association of Future Teachers',
-      acronym: 'AFT',
-      memberCount: 312,
-      status: 'ACTIVE',
-      icon: Icons.book_outlined,
-      officers: [
-        const MockOfficer(role: 'President', name: 'Grace H. Mendoza', contact: 'grace.mendoza@student.tpt.edu'),
-        const MockOfficer(role: 'VP', name: 'Harold L. Santos', contact: 'harold.santos@student.tpt.edu'),
-        const MockOfficer(role: 'Treasurer', name: 'Irene J. Pascual', contact: 'irene.pascual@student.tpt.edu'),
-      ],
-      documents: [
-        const MockDocument(title: 'AFT Annual Teaching Seminar Plan', date: 'June 08, 2026', status: 'APPROVED'),
-        const MockDocument(title: 'AFT Book Drive Request', date: 'May 12, 2026', status: 'APPROVED'),
-      ],
-    ),
-    OrganizationItem(
-      fullName: 'Hospitality Management Society',
-      acronym: 'HMSOC',
-      memberCount: 188,
-      status: 'ACTIVE',
-      icon: Icons.room_service_outlined,
-      officers: [
-        const MockOfficer(role: 'President', name: 'Julian M. Castro', contact: 'julian.castro@student.tpt.edu'),
-        const MockOfficer(role: 'VP', name: 'Kyla N. Roque', contact: 'kyla.roque@student.tpt.edu'),
-        const MockOfficer(role: 'Treasurer', name: 'Liam O. Reyes', contact: 'liam.reyes@student.tpt.edu'),
-      ],
-      documents: [
-        const MockDocument(title: 'HMSOC Banquet Event Checklist', date: 'June 05, 2026', status: 'APPROVED'),
-        const MockDocument(title: 'HMSOC Culinary Expo Proposal', date: 'May 08, 2026', status: 'REJECTED'),
-      ],
-    ),
-    OrganizationItem(
-      fullName: 'Chamber of Entrepreneurs and Managers',
-      acronym: 'CEM',
-      memberCount: 145,
-      status: 'FLAGGED',
-      icon: Icons.business_center_outlined,
-      officers: [
-        const MockOfficer(role: 'President', name: 'Mia P. Tan', contact: 'mia.tan@student.tpt.edu'),
-        const MockOfficer(role: 'VP', name: 'Nathan Q. Del Rosario', contact: 'nathan.delrosario@student.tpt.edu'),
-        const MockOfficer(role: 'Treasurer', name: 'Olivia R. Lopez', contact: 'olivia.lopez@student.tpt.edu'),
-      ],
-      documents: [
-        const MockDocument(title: 'CEM Startup Fair Proposal', date: 'June 01, 2026', status: 'REJECTED'),
-        const MockDocument(title: 'CEM Financial Audits Q4', date: 'April 18, 2026', status: 'APPROVED'),
-      ],
-    ),
-    OrganizationItem(
-      fullName: 'Junior Philippine Institute of Accountancy - Sta Maria',
-      acronym: 'JPIA',
-      memberCount: 204,
-      status: 'ACTIVE',
-      icon: Icons.calculate_outlined,
-      officers: [
-        const MockOfficer(role: 'President', name: 'Patrick S. Ramos', contact: 'patrick.ramos@student.tpt.edu'),
-        const MockOfficer(role: 'VP', name: 'Queen T. Sy', contact: 'queen.sy@student.tpt.edu'),
-        const MockOfficer(role: 'Treasurer', name: 'Ronald U. Lim', contact: 'ronald.lim@student.tpt.edu'),
-      ],
-      documents: [
-        const MockDocument(title: 'JPIA Financial Accounting Quiz Bee', date: 'June 11, 2026', status: 'APPROVED'),
-        const MockDocument(title: 'JPIA Membership Orientation Report', date: 'May 25, 2026', status: 'APPROVED'),
-      ],
-    ),
-    OrganizationItem(
-      fullName: 'Diploma in Office Management SY-Quest',
-      acronym: 'DOMT',
-      memberCount: 50,
-      status: 'FLAGGED',
-      icon: Icons.folder_open_outlined,
-      officers: [
-        const MockOfficer(role: 'President', name: 'Sarah V. Aquino', contact: 'sarah.aquino@student.tpt.edu'),
-        const MockOfficer(role: 'VP', name: 'Timothy W. Chua', contact: 'timothy.chua@student.tpt.edu'),
-        const MockOfficer(role: 'Treasurer', name: 'Vanessa X. Cruz', contact: 'vanessa.cruz@student.tpt.edu'),
-      ],
-      documents: [
-        const MockDocument(title: 'DOMT Secretarial Workshop Plan', date: 'June 03, 2026', status: 'APPROVED'),
-        const MockDocument(title: 'DOMT Lab Equipment Proposal', date: 'May 02, 2026', status: 'REJECTED'),
-      ],
-    ),
-  ];
+  Future<void> _fetchOrganizations() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final client = ApiClient();
+      final response = await client.get('/api/admin/organizations');
+      if (response.isSuccess) {
+        final List<dynamic> data = response.data ?? [];
+        setState(() {
+          _allOrganizations = data.map((o) {
+            IconData icon = Icons.business_outlined;
+            final acronym = o['acronym'] ?? '';
+            switch (acronym) {
+              case 'ACES':
+                icon = Icons.memory;
+                break;
+              case 'iSITE':
+                icon = Icons.lan_outlined;
+                break;
+              case 'AFT':
+                icon = Icons.book_outlined;
+                break;
+              case 'HMSOC':
+                icon = Icons.room_service_outlined;
+                break;
+              case 'CEM':
+                icon = Icons.business_center_outlined;
+                break;
+              case 'JPIA':
+                icon = Icons.calculate_outlined;
+                break;
+              case 'DOMT':
+                icon = Icons.folder_open_outlined;
+                break;
+            }
+
+
+            final List<dynamic> officersData = o['officers'] ?? [];
+            final List<dynamic> docsData = o['documents'] ?? [];
+
+            return OrganizationItem(
+              fullName: o['fullName'] ?? '',
+              acronym: acronym,
+              memberCount: o['memberCount'] ?? 0,
+              status: o['status'] ?? 'ACTIVE',
+              icon: icon,
+              officers: officersData.map((off) => MockOfficer(
+                role: off['role'] ?? 'Officer',
+                name: off['name'] ?? '',
+                contact: off['contact'] ?? '',
+              )).toList(),
+              documents: docsData.map((d) => MockDocument(
+                title: d['title'] ?? '',
+                date: d['date'] ?? '',
+                status: d['status'] ?? 'PENDING',
+              )).toList(),
+            );
+          }).toList();
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _errorMessage = response.data['error'] ?? 'Failed to fetch organizations';
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -468,17 +434,26 @@ class _AdminOrganizationsScreenState extends State<AdminOrganizationsScreen> {
 
           // 3. Institutional Feed Cards (Scroll Area)
           Expanded(
-            child: _filteredOrganizations.isEmpty
-                ? _buildEmptyState(themeProvider)
-                : ListView.builder(
-                    itemCount: _filteredOrganizations.length,
-                    padding: const EdgeInsets.only(left: 20, right: 20, top: 8, bottom: 80),
-                    physics: const BouncingScrollPhysics(),
-                    itemBuilder: (context, index) {
-                      final item = _filteredOrganizations[index];
-                      return _buildOrganizationCard(context, item, themeProvider);
-                    },
-                  ),
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _errorMessage != null
+                    ? Center(
+                        child: Text(
+                          _errorMessage!,
+                          style: GoogleFonts.inter(color: Colors.red),
+                        ),
+                      )
+                    : _filteredOrganizations.isEmpty
+                        ? _buildEmptyState(themeProvider)
+                        : ListView.builder(
+                            itemCount: _filteredOrganizations.length,
+                            padding: const EdgeInsets.only(left: 20, right: 20, top: 8, bottom: 80),
+                            physics: const BouncingScrollPhysics(),
+                            itemBuilder: (context, index) {
+                              final item = _filteredOrganizations[index];
+                              return _buildOrganizationCard(context, item, themeProvider);
+                            },
+                          ),
           ),
         ],
       ),

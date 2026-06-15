@@ -28,6 +28,65 @@ class _DashboardPageState extends State<DashboardPage> {
   int _selectedIndex = 0;
   int? _overrideRoleId; // Developer role override for dashboard UI testing
 
+  Map<String, double> _calculateMonthlyExpenses(List<Document> documents) {
+    final Map<String, double> monthlyMap = {
+      'Oct': 0.0,
+      'Nov': 0.0,
+      'Dec': 0.0,
+      'Jan': 0.0,
+      'Feb': 0.0,
+      'Mar': 0.0,
+    };
+    
+    final RegExp amountRegExp = RegExp(r'(?:Total Amount Spent|Proposed|Ending Balance):\s*([0-9.,]+)');
+    
+    for (var doc in documents) {
+      if (doc.documentDescription != null) {
+        final match = amountRegExp.firstMatch(doc.documentDescription!);
+        if (match != null) {
+          final cleanStr = match.group(1)!.replaceAll(',', '');
+          final amount = double.tryParse(cleanStr) ?? 0.0;
+          
+          final date = doc.submissionDate;
+          String? monthLabel;
+          switch (date.month) {
+            case 10: monthLabel = 'Oct'; break;
+            case 11: monthLabel = 'Nov'; break;
+            case 12: monthLabel = 'Dec'; break;
+            case 1: monthLabel = 'Jan'; break;
+            case 2: monthLabel = 'Feb'; break;
+            case 3: monthLabel = 'Mar'; break;
+          }
+          if (monthLabel != null) {
+            monthlyMap[monthLabel] = (monthlyMap[monthLabel] ?? 0.0) + amount;
+          }
+        }
+      }
+    }
+    return monthlyMap;
+  }
+
+  List<Widget> _buildDynamicBars(BuildContext context, List<Document> documents, double totalBudget) {
+    final monthlyExpenses = _calculateMonthlyExpenses(documents);
+    final double monthlyBudget = totalBudget / 6.0;
+    
+    double maxVal = monthlyBudget;
+    for (var val in monthlyExpenses.values) {
+      if (val > maxVal) {
+        maxVal = val;
+      }
+    }
+    maxVal = maxVal > 0 ? maxVal * 1.2 : 10000.0;
+    
+    final months = ['Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar'];
+    return months.map((month) {
+      final expVal = monthlyExpenses[month] ?? 0.0;
+      final expRatio = expVal / maxVal;
+      final budgetRatio = monthlyBudget / maxVal;
+      return _buildBar(context, expRatio.clamp(0.01, 1.0), budgetRatio.clamp(0.01, 1.0), month);
+    }).toList();
+  }
+
   bool _isNotificationPopOverOpen = false;
   OverlayEntry? _officerNotificationOverlayEntry;
 
@@ -489,14 +548,11 @@ class _DashboardPageState extends State<DashboardPage> {
                                   padding: const EdgeInsets.only(left: 40.0), // offset for Y-axis labels
                                   child: Row(
                                     mainAxisAlignment: MainAxisAlignment.spaceAround,
-                                    children: [
-                                      _buildBar(context, 0.65, 0.55, 'Oct'),
-                                      _buildBar(context, 0.35, 0.65, 'Nov'),
-                                      _buildBar(context, 0.10, 0.75, 'Dec'),
-                                      _buildBar(context, 0.60, 0.80, 'Jan'),
-                                      _buildBar(context, 0.15, 0.45, 'Feb'),
-                                      _buildBar(context, 0.45, 0.35, 'Mar'),
-                                    ],
+                                    children: _buildDynamicBars(
+                                      context,
+                                      docsList,
+                                      docProvider.stats?.budget?.total ?? 150000.0,
+                                    ),
                                   ),
                                 ),
                               ],
@@ -1591,14 +1647,11 @@ class _DashboardPageState extends State<DashboardPage> {
                                 padding: const EdgeInsets.only(left: 40.0),
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceAround,
-                                  children: [
-                                    _buildBar(context, 0.65, 0.55, 'Oct'),
-                                    _buildBar(context, 0.35, 0.65, 'Nov'),
-                                    _buildBar(context, 0.10, 0.75, 'Dec'),
-                                    _buildBar(context, 0.60, 0.80, 'Jan'),
-                                    _buildBar(context, 0.15, 0.45, 'Feb'),
-                                    _buildBar(context, 0.45, 0.35, 'Mar'),
-                                  ],
+                                  children: _buildDynamicBars(
+                                    context,
+                                    docProvider.documents,
+                                    total,
+                                  ),
                                 ),
                               ),
                             ],
@@ -1649,46 +1702,110 @@ class _DashboardPageState extends State<DashboardPage> {
                       border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.shade200),
                     ),
                     child: Column(
-                      children: [
-                        _buildExpenseRow(context, 'Tanglaw', '31.5% of total', 'P27,562', const Color(0xFF3B82F6), 0.7),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          child: Divider(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.shade100, height: 1),
-                        ),
-                        _buildExpenseRow(context, 'Foundation Week', '25.3% of total', 'P22,137', const Color(0xFF8B5CF6), 0.5),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          child: Divider(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.shade100, height: 1),
-                        ),
-                        _buildExpenseRow(context, 'IT Days', '16.2% of total', 'P14,175', const Color(0xFF06B6D4), 0.3),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          child: Divider(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.shade100, height: 1),
-                        ),
-                        _buildExpenseRow(context, 'IT Night', '27% of total', 'P23,625', const Color(0xFF10B981), 0.6),
-                        const SizedBox(height: 24),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'Total Expenses',
-                              style: GoogleFonts.inter(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                color: isDark ? Colors.white : const Color(0xFF1F2937),
+                      children: () {
+                        final List<Map<String, dynamic>> expenses = [];
+                        double totalSpentCalculated = 0.0;
+                        
+                        final RegExp amountRegExp = RegExp(r'(?:Total Amount Spent|Proposed|Ending Balance):\s*([0-9.,]+)');
+                        
+                        for (var doc in docProvider.documents) {
+                          if (doc.documentDescription != null) {
+                            final match = amountRegExp.firstMatch(doc.documentDescription!);
+                            if (match != null) {
+                              final cleanStr = match.group(1)!.replaceAll(',', '');
+                              final amount = double.tryParse(cleanStr) ?? 0.0;
+                              totalSpentCalculated += amount;
+                              expenses.add({
+                                'title': doc.documentTitle,
+                                'amount': amount,
+                              });
+                            }
+                          }
+                        }
+                        
+                        final List<Widget> children = [];
+                        
+                        if (expenses.isEmpty) {
+                          children.add(
+                            Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 20),
+                              child: Text(
+                                'No logged expenses in database.',
+                                style: GoogleFonts.inter(
+                                  fontSize: 13,
+                                  color: isDark ? Colors.grey.shade400 : Colors.grey.shade500,
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
                             ),
-                            Text(
-                              'P87,500',
-                              style: GoogleFonts.inter(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                color: isDark ? Colors.white : const Color(0xFF1F2937),
+                          );
+                        } else {
+                          expenses.sort((a, b) => (b['amount'] as double).compareTo(a['amount'] as double));
+                          
+                          final colors = [
+                            const Color(0xFF3B82F6),
+                            const Color(0xFF8B5CF6),
+                            const Color(0xFF06B6D4),
+                            const Color(0xFF10B981),
+                            const Color(0xFFF59E0B),
+                            const Color(0xFFEF4444),
+                          ];
+                          
+                          for (int i = 0; i < expenses.length; i++) {
+                            final exp = expenses[i];
+                            final double amount = exp['amount'];
+                            final double percent = totalSpentCalculated > 0 ? (amount / totalSpentCalculated) : 0.0;
+                            final color = colors[i % colors.length];
+                            
+                            children.add(
+                              _buildExpenseRow(
+                                context, 
+                                exp['title'], 
+                                '${(percent * 100).toStringAsFixed(1)}% of total', 
+                                _formatCurrency(amount), 
+                                color, 
+                                percent
                               ),
-                            ),
-                          ],
-                        ),
-                      ],
+                            );
+                            
+                            if (i < expenses.length - 1) {
+                              children.add(
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 16),
+                                  child: Divider(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.shade100, height: 1),
+                                ),
+                              );
+                            }
+                          }
+                        }
+                        
+                        children.add(const SizedBox(height: 24));
+                        children.add(
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Total Expenses',
+                                style: GoogleFonts.inter(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: isDark ? Colors.white : const Color(0xFF1F2937),
+                                ),
+                              ),
+                              Text(
+                                _formatCurrency(spent),
+                                style: GoogleFonts.inter(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: isDark ? Colors.white : const Color(0xFF1F2937),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                        
+                        return children;
+                      }(),
                     ),
                   ),
                 ],
@@ -1960,6 +2077,9 @@ class _DashboardPageState extends State<DashboardPage> {
 
   Widget _buildAnnouncementsTab(BuildContext context) {
     final isDark = Provider.of<ThemeProvider>(context).isDarkMode;
+    final docProvider = Provider.of<DocumentProvider>(context);
+    final docsList = docProvider.documents;
+
     return Container(
       color: isDark ? const Color(0xFF0B192C) : const Color(0xFFFAFAFA),
       child: Column(
@@ -1978,68 +2098,84 @@ class _DashboardPageState extends State<DashboardPage> {
                   ),
                   const SizedBox(height: 32),
 
-                  // Pinned Section
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Icon(Icons.push_pin_outlined, size: 18, color: isDark ? Colors.white : const Color(0xFF1F2937)),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Pinned',
-                        style: GoogleFonts.inter(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: isDark ? Colors.white : const Color(0xFF1F2937),
+                  if (docsList.isEmpty) ...[
+                    Center(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 40),
+                        child: Text(
+                          'No announcements at this time.',
+                          style: GoogleFonts.inter(
+                            fontSize: 14,
+                            color: isDark ? Colors.grey.shade400 : Colors.grey.shade500,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  
-                  _buildAnnouncementCard(
-                    context,
-                    title: 'COSC Society Q4 2025 Expense Report',
-                    body: 'All Q4 2025 COSC Society financial documents analyzed. 94.5% data extraction accuracy achieved. 1 sponsorship agreement flagged for hash mismatch - manual review recommended.',
-                    date: 'March 15, 2026',
-                    time: '11:59 PM',
-                    isPinned: true,
-                  ),
-                  _buildAnnouncementCard(
-                    context,
-                    title: 'New Document Submission Deadline',
-                    body: 'All organizations must submit Q1 2026 financial reports by April 15, 2026. Late submissions may affect compliance scores.',
-                    date: 'March 15, 2026',
-                    time: '11:59 PM',
-                    isPinned: true,
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // All Announcements Section
-                  Text(
-                    'All Announcements',
-                    style: GoogleFonts.inter(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: isDark ? Colors.white : const Color(0xFF1F2937),
                     ),
-                  ),
-                  const SizedBox(height: 16),
+                  ] else ...[
+                    // Pinned Section (Approved documents)
+                    () {
+                      final approvedDocs = docsList.where((d) => d.statusName?.toUpperCase() == 'APPROVED').toList();
+                      if (approvedDocs.isEmpty) return const SizedBox.shrink();
+                      
+                      final List<Widget> list = [];
+                      list.add(
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Icon(Icons.push_pin_outlined, size: 18, color: isDark ? Colors.white : const Color(0xFF1F2937)),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Pinned',
+                              style: GoogleFonts.inter(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: isDark ? Colors.white : const Color(0xFF1F2937),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                      list.add(const SizedBox(height: 16));
+                      
+                      for (var doc in approvedDocs.take(3)) {
+                        list.add(
+                          _buildAnnouncementCard(
+                            context,
+                            title: 'OFFICIAL: ${doc.documentTitle}',
+                            body: '${doc.documentDescription ?? 'Financial record audit verified.'}\n\nIntegrity Hash: ${_getHash(doc)}',
+                            date: _formatDate(doc.submissionDate),
+                            time: '${doc.submissionDate.hour.toString().padLeft(2, '0')}:${doc.submissionDate.minute.toString().padLeft(2, '0')}',
+                            isPinned: true,
+                          ),
+                        );
+                      }
+                      list.add(const SizedBox(height: 24));
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: list,
+                      );
+                    }(),
 
-                  _buildAnnouncementCard(
-                    context,
-                    title: 'COSC Society Q4 2025 Expense Report',
-                    body: 'All Q4 2025 COSC Society financial documents analyzed. 94.5% data extraction accuracy achieved. 1 sponsorship agreement flagged for hash mismatch - manual review recommended.',
-                    date: 'March 15, 2026',
-                    time: '11:59 PM',
-                  ),
-                  _buildAnnouncementCard(
-                    context,
-                    title: 'New Document Submission Deadline',
-                    body: 'All organizations must submit Q1 2026 financial reports by April 15, 2026. Late submissions may affect compliance scores.',
-                    date: 'March 15, 2026',
-                    time: '11:59 PM',
-                  ),
+                    // All Announcements Section (All documents)
+                    Text(
+                      'All Announcements',
+                      style: GoogleFonts.inter(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: isDark ? Colors.white : const Color(0xFF1F2937),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    ...docsList.map((doc) => _buildAnnouncementCard(
+                      context,
+                      title: doc.documentTitle,
+                      body: doc.documentDescription ?? 'New document submission registered in public ledger.',
+                      date: _formatDate(doc.submissionDate),
+                      time: '${doc.submissionDate.hour.toString().padLeft(2, '0')}:${doc.submissionDate.minute.toString().padLeft(2, '0')}',
+                    )),
+                  ],
                 ],
               ),
             ),

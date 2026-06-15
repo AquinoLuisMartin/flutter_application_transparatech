@@ -22,6 +22,15 @@ app.get("/", (req, res) => {
 
 app.use("/api", apiRoutes);
 
+// Error handling middleware for JSON parsing syntax errors
+app.use((err: any, req: any, res: any, next: any) => {
+  if (err instanceof SyntaxError) {
+    console.error("Malformed JSON received:", err.message);
+    return res.status(400).json({ error: "Malformed JSON payload", details: err.message });
+  }
+  next(err);
+});
+
 // Start server
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
