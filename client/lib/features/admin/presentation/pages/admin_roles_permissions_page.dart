@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_application_transparatech/core/theme/verifi_theme.dart';
 import 'package:flutter_application_transparatech/core/providers/theme_provider.dart';
+import 'package:flutter_application_transparatech/features/admin/presentation/providers/admin_queue_provider.dart';
 
 class AdminRolesPermissionsScreen extends StatefulWidget {
   const AdminRolesPermissionsScreen({super.key});
@@ -595,11 +596,14 @@ class _AdminRolesPermissionsScreenState extends State<AdminRolesPermissionsScree
                 isEnabled: true,
                 themeProvider: themeProvider,
               ),
-              _buildGridItem(
-                badge: _buildIconBadge(icon: Icons.inventory_2_outlined, isEnabled: true, isCircular: false, themeProvider: themeProvider),
-                label: 'ARCHIVE',
-                isEnabled: true,
-                themeProvider: themeProvider,
+              GestureDetector(
+                onTap: () => _showArchiveLogsDrawer(context),
+                child: _buildGridItem(
+                  badge: _buildIconBadge(icon: Icons.inventory_2_outlined, isEnabled: true, isCircular: false, themeProvider: themeProvider),
+                  label: 'ARCHIVE',
+                  isEnabled: true,
+                  themeProvider: themeProvider,
+                ),
               ),
             ],
           ),
@@ -879,6 +883,196 @@ class _AdminRolesPermissionsScreenState extends State<AdminRolesPermissionsScree
           ),
         ],
       ),
+    );
+  }
+
+  // Sliding sheet showing archived logs for manual audits or restores
+  void _showArchiveLogsDrawer(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: themeProvider.isDarkMode ? const Color(0xFF1E293B) : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      isScrollControlled: true,
+      builder: (BuildContext context) {
+        final queueProvider = Provider.of<AdminQueueProvider>(context);
+        final archived = queueProvider.archivedUsers;
+
+        return DraggableScrollableSheet(
+          initialChildSize: 0.6,
+          minChildSize: 0.4,
+          maxChildSize: 0.9,
+          expand: false,
+          builder: (context, scrollController) {
+            return Container(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: themeProvider.isDarkMode ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    'Archived User Dossiers',
+                    style: GoogleFonts.inter(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: themeProvider.isDarkMode ? Colors.white : VeriFiColors.textDark,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'HISTORICAL REGISTRATIONS & SYSTEM TRAILS',
+                    style: GoogleFonts.inter(
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold,
+                      color: themeProvider.isDarkMode ? Colors.grey.shade500 : VeriFiColors.textLight,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Divider(color: themeProvider.isDarkMode ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+                  const SizedBox(height: 8),
+                  Expanded(
+                    child: archived.isEmpty
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.archive_outlined,
+                                  size: 48,
+                                  color: themeProvider.isDarkMode ? Colors.grey.shade700 : const Color(0xFFCBD5E1),
+                                ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  'No archived user records found.',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 14,
+                                    color: themeProvider.isDarkMode ? Colors.grey.shade500 : const Color(0xFF9CA3AF),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        : ListView.builder(
+                            controller: scrollController,
+                            itemCount: archived.length,
+                            itemBuilder: (context, index) {
+                              final user = archived[index];
+                              return Container(
+                                margin: const EdgeInsets.only(bottom: 12),
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: themeProvider.isDarkMode ? const Color(0xFF0F172A) : const Color(0xFFF8F9FB),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: themeProvider.isDarkMode ? const Color(0xFF334155) : const Color(0xFFEEF2FF),
+                                    width: 1.5,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            user.fullName,
+                                            style: GoogleFonts.inter(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.bold,
+                                              color: themeProvider.isDarkMode ? Colors.white : VeriFiColors.textDark,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            '${user.email} | ${user.role} | ${user.organization}',
+                                            style: GoogleFonts.inter(
+                                              fontSize: 11,
+                                              color: themeProvider.isDarkMode ? Colors.grey.shade400 : VeriFiColors.textGrey,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 6),
+                                          Row(
+                                            children: [
+                                              Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                                decoration: BoxDecoration(
+                                                  color: const Color(0xFFFEE2E2),
+                                                  borderRadius: BorderRadius.circular(12),
+                                                ),
+                                                child: Text(
+                                                  user.systemFlag.toUpperCase(),
+                                                  style: GoogleFonts.inter(
+                                                    fontSize: 9,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: const Color(0xFFEF4444),
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    ElevatedButton.icon(
+                                      onPressed: () {
+                                        queueProvider.restoreUser(user);
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: Row(
+                                              children: [
+                                                const Icon(Icons.restore, color: Colors.white),
+                                                const SizedBox(width: 8),
+                                                Text('${user.fullName} restored successfully.', style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
+                                              ],
+                                            ),
+                                            backgroundColor: const Color(0xFF22C55E),
+                                            behavior: SnackBarBehavior.floating,
+                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                          ),
+                                        );
+                                      },
+                                      icon: const Icon(Icons.settings_backup_restore, size: 14),
+                                      label: Text(
+                                        'Restore',
+                                        style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold),
+                                      ),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: const Color(0xFFEEF2FF),
+                                        foregroundColor: const Color(0xFF3B48F6),
+                                        elevation: 0,
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }

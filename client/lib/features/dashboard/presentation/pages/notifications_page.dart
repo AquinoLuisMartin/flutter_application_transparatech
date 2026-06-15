@@ -90,7 +90,7 @@ class NotificationsPage extends StatelessWidget {
           Container(
             width: double.infinity,
             decoration: const BoxDecoration(
-              color: Color(0xFF132A42),
+              color: Color(0xFF0F2547),
             ),
             padding: EdgeInsets.only(
               top: MediaQuery.of(context).padding.top + 20,

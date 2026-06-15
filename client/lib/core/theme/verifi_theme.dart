@@ -4,7 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 /// VeriFi Design System Colors
 class VeriFiColors {
   /// Primary Color: VeriFi Blue
-  static const Color primary = Color(0xFF4F6BFF);
+  static const Color primary = Color(0xFF2563EB);
 
   /// Secondary Colors
   static const Color secondaryEE = Color(0xFFEEF2FF);

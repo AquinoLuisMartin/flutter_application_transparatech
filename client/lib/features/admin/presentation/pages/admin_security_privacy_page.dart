@@ -471,62 +471,84 @@ class _AdminSecurityPrivacyScreenState extends State<AdminSecurityPrivacyScreen>
     );
   }
 
-  // Header banner layout with deep navy background
+  // Header banner layout with synchronized white layout
   Widget _buildHeader(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final bool isDark = themeProvider.isDarkMode;
+    final Color headerColor = isDark ? const Color(0xFF1E293B) : Colors.white;
+    final Color textPrimary = isDark ? Colors.white : const Color(0xFF374151);
+    final Color textSecondary = isDark ? const Color(0xFF9CA3AF) : const Color(0xFF6B7280);
+    final Color dividerColor = isDark ? const Color(0xFF334155) : const Color(0xFFE5E7EB);
+
     return Container(
-      width: double.infinity,
-      color: const Color(0xFF0F2547), // Solid Deep Navy Blue
       padding: EdgeInsets.only(
-        top: MediaQuery.of(context).padding.top + 16,
-        left: 20,
-        right: 20,
-        bottom: 20,
+        top: MediaQuery.of(context).padding.top,
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
+      color: headerColor,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // Circular back chevron button
-          GestureDetector(
-            onTap: () => _showCancelWarningModal(context),
-            child: Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.chevron_left,
-                color: Colors.white,
-                size: 20,
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          // Title String & Subtitle Column
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          SizedBox(
+            height: 72,
+            child: Stack(
               children: [
-                Text(
-                  'Security & Privacy',
-                  style: GoogleFonts.inter(
-                    fontSize: 16,
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: GestureDetector(
+                      onTap: () => _showCancelWarningModal(context),
+                      behavior: HitTestBehavior.opaque,
+                      child: SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Icon(
+                            Icons.arrow_back,
+                            color: textPrimary,
+                            size: 24,
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  'Manage system authentication controls, sessions, and data safety parameters',
-                  style: GoogleFonts.inter(
-                    fontSize: 10,
-                    color: Colors.white.withValues(alpha: 0.6),
-                    fontWeight: FontWeight.w400,
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 56),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text(
+                          'Security & Privacy',
+                          style: GoogleFonts.inter(
+                            fontSize: 16,
+                            color: textPrimary,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Manage system authentication controls, sessions, and data safety parameters',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.inter(
+                            fontSize: 10,
+                            color: textSecondary,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
             ),
+          ),
+          Container(
+            height: 1,
+            color: dividerColor,
           ),
         ],
       ),
@@ -783,10 +805,10 @@ class _AdminSecurityPrivacyScreenState extends State<AdminSecurityPrivacyScreen>
           child: OutlinedButton(
             onPressed: () => _showCancelWarningModal(context),
             style: OutlinedButton.styleFrom(
-              foregroundColor: themeProvider.isDarkMode ? Colors.white : const Color(0xFF4B5563),
+              foregroundColor: themeProvider.isDarkMode ? Colors.white.withValues(alpha: 0.6) : const Color(0xFF9CA3AF),
               backgroundColor: themeProvider.isDarkMode ? const Color(0xFF1E293B) : Colors.white,
               side: BorderSide(
-                color: themeProvider.isDarkMode ? const Color(0xFF334155) : const Color(0xFFCBD5E1),
+                color: themeProvider.isDarkMode ? const Color(0xFF334155) : const Color(0xFFE5E7EB),
                 width: 1.5,
               ),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),

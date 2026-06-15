@@ -7,6 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_application_transparatech/core/theme/verifi_theme.dart';
 import '../constants/app_constants.dart';
+import 'package:provider/provider.dart';
+import 'package:flutter_application_transparatech/core/providers/theme_provider.dart';
 
 /// Custom app bar widget
 class AppBarWidget extends StatelessWidget implements PreferredSizeWidget {
@@ -272,7 +274,7 @@ class PrimaryButton extends StatelessWidget {
                     label,
                     style: GoogleFonts.inter(
                       fontSize: 16,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ],
@@ -326,10 +328,11 @@ class SecondaryButton extends StatelessWidget {
       child: OutlinedButton(
         onPressed: active ? onPressed : null,
         style: OutlinedButton.styleFrom(
-          foregroundColor: VeriFiColors.primary,
-          disabledForegroundColor: VeriFiColors.primary.withValues(alpha: 0.5),
+          backgroundColor: Colors.transparent,
+          foregroundColor: const Color(0xFF2563EB),
+          disabledForegroundColor: const Color(0xFF2563EB).withValues(alpha: 0.5),
           side: BorderSide(
-            color: active ? VeriFiColors.primary : VeriFiColors.primary.withValues(alpha: 0.5),
+            color: active ? const Color(0xFF60A5FA) : const Color(0xFF93C5FD).withValues(alpha: 0.5),
             width: 1.5,
           ),
           shape: RoundedRectangleBorder(
@@ -344,7 +347,7 @@ class SecondaryButton extends StatelessWidget {
                 height: 24,
                 child: CircularProgressIndicator(
                   strokeWidth: 2.5,
-                  valueColor: AlwaysStoppedAnimation<Color>(VeriFiColors.primary),
+                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF2563EB)),
                 ),
               )
             : Row(
@@ -402,18 +405,21 @@ class VeriFiCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final bool isDark = themeProvider.isDarkMode;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         margin: const EdgeInsets.only(bottom: VeriFiSpacing.s16),
         padding: const EdgeInsets.all(VeriFiSpacing.s16),
         decoration: BoxDecoration(
-          color: VeriFiColors.surface,
+          color: isDark ? const Color(0xFF1E1E1E) : VeriFiColors.surface,
           borderRadius: BorderRadius.circular(VeriFiBorderRadius.cards),
-          border: Border.all(color: const Color(0xFFEEF2FF), width: 1.5),
+          border: Border.all(color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFEEF2FF), width: 1.5),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
+              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -425,12 +431,12 @@ class VeriFiCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(VeriFiSpacing.s8),
               decoration: BoxDecoration(
-                color: VeriFiColors.secondaryEE,
+                color: isDark ? const Color(0xFF2A2A2A) : VeriFiColors.secondaryEE,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: IconTheme(
-                data: const IconThemeData(
-                  color: VeriFiColors.primary,
+                data: IconThemeData(
+                  color: isDark ? Colors.blue.shade300 : VeriFiColors.primary,
                   size: 24,
                 ),
                 child: icon,
@@ -446,7 +452,7 @@ class VeriFiCard extends StatelessWidget {
                     style: GoogleFonts.inter(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: VeriFiColors.textDark,
+                      color: isDark ? Colors.white : VeriFiColors.textDark,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -457,7 +463,7 @@ class VeriFiCard extends StatelessWidget {
                     style: GoogleFonts.inter(
                       fontSize: 12,
                       fontWeight: FontWeight.w400,
-                      color: VeriFiColors.textGrey,
+                      color: isDark ? Colors.grey.shade400 : VeriFiColors.textGrey,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,

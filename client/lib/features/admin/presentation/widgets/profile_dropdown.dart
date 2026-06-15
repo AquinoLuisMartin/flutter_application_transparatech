@@ -5,6 +5,7 @@ import 'package:flutter_application_transparatech/core/theme/verifi_theme.dart';
 import 'package:flutter_application_transparatech/features/auth/presentation/providers/auth_provider.dart';
 import 'package:flutter_application_transparatech/features/auth/presentation/pages/auth_page.dart' as auth;
 import 'package:flutter_application_transparatech/features/admin/presentation/pages/admin_settings_page.dart';
+import 'package:flutter_application_transparatech/features/admin/presentation/pages/admin_account_settings_page.dart';
 
 /// Triggers a clean, white-rounded dropdown dialog window overlay.
 /// Contains the active Admin user details, and 3 functional menu options.
@@ -88,8 +89,9 @@ void showProfileDropdown(BuildContext context) {
                 dense: true,
                 onTap: () {
                   Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Account Settings clicked')),
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const AdminAccountSettingsScreen()),
                   );
                 },
               ),

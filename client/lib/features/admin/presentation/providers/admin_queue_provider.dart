@@ -1,5 +1,25 @@
 import 'package:flutter/material.dart';
 
+class UserItem {
+  String fullName;
+  String email;
+  String role; // 'Admin', 'Officers', or 'Student'
+  String organization; // 'JPIA', 'iSITE', 'ACES', 'AFT', 'CEM', 'HMSOC'
+  String lastLogin;
+  bool isActive;
+  String systemFlag; // 'ACTIVE' or 'ARCHIVED'
+
+  UserItem({
+    required this.fullName,
+    required this.email,
+    required this.role,
+    required this.organization,
+    this.lastLogin = 'Last login: April 23, 2025',
+    this.isActive = true,
+    this.systemFlag = 'ACTIVE',
+  });
+}
+
 /// Local model for submissions in the admin queue
 class QueueSubmission {
   final String id;
@@ -31,11 +51,33 @@ class QueueSubmission {
 
 class AdminQueueProvider extends ChangeNotifier {
   late List<QueueSubmission> _submissions;
+  late List<UserItem> _allUsers;
   String _searchQuery = '';
   DateTimeRange? _selectedDateRange;
   String _selectedStatusFilter = 'PENDING'; // 'PENDING', 'APPROVED', or 'REJECTED'
 
   AdminQueueProvider() {
+    // Initialize mock users
+    _allUsers = [
+      UserItem(fullName: 'Princess Dianne Pastrana', email: 'princesspastrana@gmail.com', role: 'Officers', organization: 'JPIA'),
+      UserItem(fullName: 'Ellayssa Aguilar', email: 'ellayssaaguilar@gmail.com', role: 'Officers', organization: 'iSITE'),
+      UserItem(fullName: 'Bob Johnson', email: 'bobjohnson@gmail.com', role: 'Officers', organization: 'CEM'),
+      UserItem(fullName: 'Emily Davis', email: 'emilydavis@gmail.com', role: 'Officers', organization: 'iSITE'),
+      UserItem(fullName: 'John Doe', email: 'johndoe@gmail.com', role: 'Admin', organization: 'ACES'),
+      UserItem(fullName: 'Alice Williams', email: 'alicewilliams@gmail.com', role: 'Admin', organization: 'HMSOC'),
+      UserItem(fullName: 'Jane Smith', email: 'janesmith@gmail.com', role: 'Student', organization: 'AFT'),
+      UserItem(fullName: 'Michael Brown', email: 'michaelbrown@gmail.com', role: 'Student', organization: 'JPIA'),
+      UserItem(fullName: 'David Miller', email: 'davidmiller@gmail.com', role: 'Student', organization: 'ACES'),
+      UserItem(fullName: 'Sarah Wilson', email: 'sarahwilson@gmail.com', role: 'Student', organization: 'AFT'),
+      UserItem(fullName: 'James Taylor', email: 'jamestaylor@gmail.com', role: 'Student', organization: 'CEM'),
+      UserItem(fullName: 'Jessica Thomas', email: 'jessicathomas@gmail.com', role: 'Student', organization: 'HMSOC'),
+      UserItem(fullName: 'Robert Anderson', email: 'robertanderson@gmail.com', role: 'Student', organization: 'JPIA'),
+      UserItem(fullName: 'Jennifer Jackson', email: 'jenniferjackson@gmail.com', role: 'Student', organization: 'iSITE'),
+      UserItem(fullName: 'William White', email: 'williamwhite@gmail.com', role: 'Student', organization: 'ACES'),
+      UserItem(fullName: 'Linda Harris', email: 'lindaharris@gmail.com', role: 'Student', organization: 'AFT'),
+      UserItem(fullName: 'Richard Martin', email: 'richardmartin@gmail.com', role: 'Student', organization: 'CEM'),
+      UserItem(fullName: 'Patricia Garcia', email: 'patriciagarcia@gmail.com', role: 'Student', organization: 'HMSOC'),
+    ];
     // Initialize mock data
     _submissions = [
       QueueSubmission(
@@ -202,6 +244,32 @@ class AdminQueueProvider extends ChangeNotifier {
   String get searchQuery => _searchQuery;
   DateTimeRange? get selectedDateRange => _selectedDateRange;
   String get selectedStatusFilter => _selectedStatusFilter;
+
+  List<UserItem> get rawUsers => _allUsers;
+  List<UserItem> get activeUsers => _allUsers.where((u) => u.systemFlag == 'ACTIVE').toList();
+  List<UserItem> get archivedUsers => _allUsers.where((u) => u.systemFlag == 'ARCHIVED').toList();
+
+  void archiveUser(UserItem user) {
+    user.systemFlag = 'ARCHIVED';
+    user.isActive = false;
+    notifyListeners();
+  }
+
+  void restoreUser(UserItem user) {
+    user.systemFlag = 'ACTIVE';
+    user.isActive = true;
+    notifyListeners();
+  }
+
+  void addUser(UserItem user) {
+    _allUsers.add(user);
+    notifyListeners();
+  }
+
+  void updateUser(int index, UserItem user) {
+    _allUsers[index] = user;
+    notifyListeners();
+  }
 
   // Setters
   void setSearchQuery(String query) {

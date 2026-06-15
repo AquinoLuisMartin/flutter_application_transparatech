@@ -7,8 +7,6 @@ import 'package:flutter_application_transparatech/features/admin/presentation/pa
 import 'package:flutter_application_transparatech/features/admin/presentation/pages/admin_roles_permissions_page.dart';
 import 'package:flutter_application_transparatech/features/admin/presentation/pages/admin_audit_logs_page.dart';
 import 'package:flutter_application_transparatech/features/admin/presentation/pages/admin_general_settings_page.dart';
-import 'package:flutter_application_transparatech/features/admin/presentation/pages/admin_notification_settings_page.dart';
-import 'package:flutter_application_transparatech/features/admin/presentation/pages/admin_security_privacy_page.dart';
 
 class AdminSettingsScreen extends StatelessWidget {
   const AdminSettingsScreen({super.key});
@@ -108,34 +106,6 @@ class AdminSettingsScreen extends StatelessWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(builder: (context) => const AdminGeneralSettingsScreen()),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  _buildSettingsCard(
-                    context: context,
-                    title: 'Notification Settings',
-                    description: 'Configure system settings',
-                    icon: Icons.notifications_none_outlined,
-                    themeProvider: themeProvider,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const AdminNotificationSettingsScreen()),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  _buildSettingsCard(
-                    context: context,
-                    title: 'Security & Privacy',
-                    description: 'Security and privacy settings',
-                    icon: Icons.lock_outline,
-                    themeProvider: themeProvider,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const AdminSecurityPrivacyScreen()),
                       );
                     },
                   ),
@@ -253,27 +223,53 @@ class AdminSettingsScreen extends StatelessWidget {
     required String description,
     required IconData icon,
     required ThemeProvider themeProvider,
+    bool disabled = false,
     VoidCallback? onTap,
   }) {
     return GestureDetector(
-      onTap: onTap ?? () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                Icon(icon, color: Colors.white, size: 16),
-                const SizedBox(width: 8),
-                Text('Opening $title details...', style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
-              ],
-            ),
-            backgroundColor: const Color(0xFF3B48F6),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          ),
-        );
-      },
-      child: Container(
-        padding: const EdgeInsets.all(16),
+      onTap: disabled
+          ? () {
+              ScaffoldMessenger.of(context).clearSnackBars();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Row(
+                    children: [
+                      Icon(icon, color: Colors.white, size: 16),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          '$title has moved to Account Settings.',
+                          style: GoogleFonts.inter(fontWeight: FontWeight.w500),
+                        ),
+                      ),
+                    ],
+                  ),
+                  backgroundColor: const Color(0xFF3B48F6),
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+              );
+            }
+          : (onTap ?? () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Row(
+                    children: [
+                      Icon(icon, color: Colors.white, size: 16),
+                      const SizedBox(width: 8),
+                      Text('Opening $title details...', style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
+                    ],
+                  ),
+                  backgroundColor: const Color(0xFF3B48F6),
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+              );
+            }),
+      child: Opacity(
+        opacity: disabled ? 0.5 : 1.0,
+        child: Container(
+          padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: themeProvider.isDarkMode ? const Color(0xFF1E293B) : Colors.white,
           borderRadius: BorderRadius.circular(16),
@@ -341,6 +337,7 @@ class AdminSettingsScreen extends StatelessWidget {
           ],
         ),
       ),
-    );
+    ),
+  );
   }
 }

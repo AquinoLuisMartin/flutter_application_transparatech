@@ -5,27 +5,12 @@ import 'package:flutter_application_transparatech/core/theme/verifi_theme.dart';
 import 'package:flutter_application_transparatech/features/auth/presentation/providers/auth_provider.dart';
 import 'package:flutter_application_transparatech/core/providers/theme_provider.dart';
 import 'package:flutter_application_transparatech/features/admin/presentation/widgets/profile_dropdown.dart';
-
-class UserItem {
-  String fullName;
-  String email;
-  String role; // 'Admin', 'Officers', or 'Student'
-  String organization; // 'JPIA', 'iSITE', 'ACES', 'AFT', 'CEM', 'HMSOC'
-  String lastLogin;
-  bool isActive;
-
-  UserItem({
-    required this.fullName,
-    required this.email,
-    required this.role,
-    required this.organization,
-    this.lastLogin = 'Last login: April 23, 2025',
-    this.isActive = true,
-  });
-}
+import 'package:flutter_application_transparatech/features/admin/presentation/providers/admin_queue_provider.dart';
+import 'package:flutter_application_transparatech/features/admin/presentation/widgets/admin_notification_bell.dart';
 
 class AdminUsersScreen extends StatefulWidget {
-  const AdminUsersScreen({super.key});
+  final String? initialRoleFilter;
+  const AdminUsersScreen({super.key, this.initialRoleFilter});
 
   @override
   State<AdminUsersScreen> createState() => _AdminUsersScreenState();
@@ -33,29 +18,25 @@ class AdminUsersScreen extends StatefulWidget {
 
 class _AdminUsersScreenState extends State<AdminUsersScreen> {
   final TextEditingController _searchController = TextEditingController();
-  DateTimeRange? _selectedDateRange;
+  String? _selectedRoleFilter;
 
-  // Initial set of 18 users (2 Admins, 4 Officers, 12 Students/Members)
-  final List<UserItem> _allUsers = [
-    UserItem(fullName: 'Princess Dianne Pastrana', email: 'princesspastrana@gmail.com', role: 'Officers', organization: 'JPIA'),
-    UserItem(fullName: 'Ellayssa Aguilar', email: 'ellayssaaguilar@gmail.com', role: 'Officers', organization: 'iSITE'),
-    UserItem(fullName: 'Bob Johnson', email: 'bobjohnson@gmail.com', role: 'Officers', organization: 'CEM'),
-    UserItem(fullName: 'Emily Davis', email: 'emilydavis@gmail.com', role: 'Officers', organization: 'iSITE'),
-    UserItem(fullName: 'John Doe', email: 'johndoe@gmail.com', role: 'Admin', organization: 'ACES'),
-    UserItem(fullName: 'Alice Williams', email: 'alicewilliams@gmail.com', role: 'Admin', organization: 'HMSOC'),
-    UserItem(fullName: 'Jane Smith', email: 'janesmith@gmail.com', role: 'Student', organization: 'AFT'),
-    UserItem(fullName: 'Michael Brown', email: 'michaelbrown@gmail.com', role: 'Student', organization: 'JPIA'),
-    UserItem(fullName: 'David Miller', email: 'davidmiller@gmail.com', role: 'Student', organization: 'ACES'),
-    UserItem(fullName: 'Sarah Wilson', email: 'sarahwilson@gmail.com', role: 'Student', organization: 'AFT'),
-    UserItem(fullName: 'James Taylor', email: 'jamestaylor@gmail.com', role: 'Student', organization: 'CEM'),
-    UserItem(fullName: 'Jessica Thomas', email: 'jessicathomas@gmail.com', role: 'Student', organization: 'HMSOC'),
-    UserItem(fullName: 'Robert Anderson', email: 'robertanderson@gmail.com', role: 'Student', organization: 'JPIA'),
-    UserItem(fullName: 'Jennifer Jackson', email: 'jenniferjackson@gmail.com', role: 'Student', organization: 'iSITE'),
-    UserItem(fullName: 'William White', email: 'williamwhite@gmail.com', role: 'Student', organization: 'ACES'),
-    UserItem(fullName: 'Linda Harris', email: 'lindaharris@gmail.com', role: 'Student', organization: 'AFT'),
-    UserItem(fullName: 'Richard Martin', email: 'richardmartin@gmail.com', role: 'Student', organization: 'CEM'),
-    UserItem(fullName: 'Patricia Garcia', email: 'patriciagarcia@gmail.com', role: 'Student', organization: 'HMSOC'),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _selectedRoleFilter = widget.initialRoleFilter;
+  }
+
+  @override
+  void didUpdateWidget(covariant AdminUsersScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialRoleFilter != oldWidget.initialRoleFilter) {
+      setState(() {
+        _selectedRoleFilter = widget.initialRoleFilter;
+      });
+    }
+  }
+
+  List<UserItem> get _allUsers => Provider.of<AdminQueueProvider>(context, listen: false).rawUsers;
 
   @override
   void dispose() {
@@ -63,16 +44,28 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
     super.dispose();
   }
 
-  // Reactive filtering using search text
+  // Reactive filtering using search text & role filter
   List<UserItem> get _filteredUsers {
     final query = _searchController.text.toLowerCase().trim();
-    if (query.isEmpty) {
-      return _allUsers;
+    var list = Provider.of<AdminQueueProvider>(context).activeUsers;
+
+    // 1. Role Filter
+    if (_selectedRoleFilter != null) {
+      final String roleTarget = _selectedRoleFilter == 'Students'
+          ? 'Student'
+          : (_selectedRoleFilter == 'Admins' ? 'Admin' : 'Officers');
+      list = list.where((u) => u.role == roleTarget).toList();
     }
-    return _allUsers.where((u) {
-      return u.fullName.toLowerCase().contains(query) ||
-          u.email.toLowerCase().contains(query);
-    }).toList();
+
+    // 2. Search query filter
+    if (query.isNotEmpty) {
+      list = list.where((u) {
+        return u.fullName.toLowerCase().contains(query) ||
+            u.email.toLowerCase().contains(query);
+      }).toList();
+    }
+
+    return list;
   }
 
   // Header metric counters (dynamic calculations)
@@ -81,50 +74,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
   int get _officersCount => _allUsers.where((u) => u.role == 'Officers').length;
   int get _adminCount => _allUsers.where((u) => u.role == 'Admin').length;
 
-  // Calendar modal for filtering date range
-  Future<void> _selectDateRange(BuildContext context) async {
-    final DateTimeRange? picked = await showDateRangePicker(
-      context: context,
-      initialDateRange: _selectedDateRange,
-      firstDate: DateTime(2025, 1, 1),
-      lastDate: DateTime(2027, 12, 31),
-      builder: (context, child) {
-        return Theme(
-          data: ThemeData.light(useMaterial3: true).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: Color(0xFF3B48F6), // Selected highlight blue
-              onPrimary: Colors.white,
-              surface: Colors.white, // Modal background
-              onSurface: Color(0xFF1F2937), // Inactive dates high-contrast dark grey
-            ),
-            scaffoldBackgroundColor: Colors.white,
-            appBarTheme: const AppBarTheme(
-              backgroundColor: Colors.white,
-              foregroundColor: Color(0xFF1F2937),
-              elevation: 0,
-              iconTheme: IconThemeData(color: Color(0xFF1F2937)),
-            ),
-            textButtonTheme: TextButtonThemeData(
-              style: TextButton.styleFrom(
-                foregroundColor: const Color(0xFF3B48F6),
-              ),
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
 
-    if (picked != null) {
-      setState(() {
-        _selectedDateRange = picked;
-      });
-    }
-  }
-
-  String _formatDateCompact(DateTime date) {
-    return '${date.month}/${date.day}/${date.year.toString().substring(2)}';
-  }
 
   // Main custom Modal for Adding or Editing user data
   void _showUserFormModal(BuildContext context, {UserItem? existingUser, int? editIndex}) {
@@ -414,27 +364,25 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                                       final String newName = nameController.text.trim();
                                       final String newEmail = emailController.text.trim();
 
-                                      setState(() {
-                                        if (isEdit) {
-                                          _allUsers[editIndex!] = UserItem(
-                                            fullName: newName,
-                                            email: newEmail,
-                                            role: selectedRole,
-                                            organization: selectedOrg,
-                                            lastLogin: existingUser.lastLogin,
-                                            isActive: existingUser.isActive,
-                                          );
-                                        } else {
-                                          _allUsers.add(
-                                            UserItem(
-                                              fullName: newName,
-                                              email: newEmail,
-                                              role: selectedRole,
-                                              organization: selectedOrg,
-                                            ),
-                                          );
-                                        }
-                                      });
+                                      final queueProvider = Provider.of<AdminQueueProvider>(context, listen: false);
+                                      if (isEdit) {
+                                        queueProvider.updateUser(editIndex!, UserItem(
+                                          fullName: newName,
+                                          email: newEmail,
+                                          role: selectedRole,
+                                          organization: selectedOrg,
+                                          lastLogin: existingUser.lastLogin,
+                                          isActive: existingUser.isActive,
+                                          systemFlag: existingUser.systemFlag,
+                                        ));
+                                      } else {
+                                        queueProvider.addUser(UserItem(
+                                          fullName: newName,
+                                          email: newEmail,
+                                          role: selectedRole,
+                                          organization: selectedOrg,
+                                        ));
+                                      }
 
                                       Navigator.pop(dialogContext);
 
@@ -485,79 +433,120 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
     );
   }
 
-  // Delete User confirmation dialog overlay
-  void _showDeleteUserDialog(BuildContext context, int index) {
+  // Archive User confirmation dialog overlay
+  void _showArchiveUserDialog(BuildContext context, UserItem targetUser, int realIndex) {
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
-    final targetUser = _allUsers[index];
+    final queueProvider = Provider.of<AdminQueueProvider>(context, listen: false);
 
     showDialog(
       context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.4),
       builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: themeProvider.isDarkMode ? const Color(0xFF1E293B) : Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Text(
-            'Confirm Delete',
-            style: GoogleFonts.inter(
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-              color: themeProvider.isDarkMode ? Colors.white : VeriFiColors.textDark,
-            ),
-          ),
-          content: Text(
-            'Do you want to delete profile record for ${targetUser.fullName}?',
-            style: GoogleFonts.inter(
-              fontSize: 14,
-              color: themeProvider.isDarkMode ? Colors.grey.shade300 : VeriFiColors.textGrey,
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(
-                'Cancel',
-                style: GoogleFonts.inter(
-                  fontWeight: FontWeight.w600,
-                  color: themeProvider.isDarkMode ? Colors.grey.shade400 : VeriFiColors.textLight,
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Container(
+            width: double.infinity,
+            constraints: const BoxConstraints(maxWidth: 400),
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: themeProvider.isDarkMode ? const Color(0xFF1E293B) : Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.08),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
                 ),
-              ),
+              ],
             ),
-            ElevatedButton(
-              onPressed: () {
-                final deletedName = targetUser.fullName;
-                setState(() {
-                  _allUsers.removeAt(index);
-                });
-                Navigator.pop(context);
-
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Row(
-                      children: [
-                        const Icon(Icons.delete, color: Colors.white),
-                        const SizedBox(width: 8),
-                        Text('$deletedName deleted successfully.', style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
-                      ],
-                    ),
-                    backgroundColor: VeriFiColors.error,
-                    behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Title Header
+                Text(
+                  'Confirm Archive',
+                  style: GoogleFonts.inter(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF1F2937),
                   ),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: VeriFiColors.error,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              ),
-              child: Text(
-                'Confirm',
-                style: GoogleFonts.inter(fontWeight: FontWeight.bold),
-              ),
+                ),
+                const SizedBox(height: 16),
+                // Body Explainer Label
+                Text(
+                  'Are you sure you want to archive the profile record for ${targetUser.fullName}? This user will lose active system access rights, and their dossier record data will be safely migrated to the administration audit logs archive folder.',
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    height: 1.5,
+                    color: themeProvider.isDarkMode ? Colors.grey.shade300 : const Color(0xFF4B5563),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                // Footer Action Buttons (Right-Aligned Array)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // Left Link Trigger (Cancel)
+                    GestureDetector(
+                      onTap: () => Navigator.pop(context),
+                      child: Text(
+                        'Cancel',
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF9CA3AF),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 20),
+                    // Right Action Button (Confirm)
+                    ElevatedButton(
+                      onPressed: () {
+                        // Dismiss modal
+                        Navigator.pop(context);
+
+                        // Execute archive workflow
+                        queueProvider.archiveUser(targetUser);
+
+                        // SnackBar
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Row(
+                              children: [
+                                const Icon(Icons.archive_outlined, color: Colors.white),
+                                const SizedBox(width: 8),
+                                Text('${targetUser.fullName} archived successfully.', style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
+                              ],
+                            ),
+                            backgroundColor: const Color(0xFFEF4444),
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFEF4444),
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      ),
+                      child: Text(
+                        'Confirm',
+                        style: GoogleFonts.inter(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
-          ],
+          ),
         );
       },
     );
@@ -636,7 +625,9 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
   Widget _buildHeader(BuildContext context, ThemeProvider themeProvider) {
     final authProvider = Provider.of<AuthProvider>(context);
     final user = authProvider.currentUser;
-    final String fullName = user != null ? '${user.firstName} ${user.lastName}' : 'admin admin';
+    final String fullName = (user != null && '${user.firstName} ${user.lastName}'.trim().isNotEmpty && '${user.firstName} ${user.lastName}' != 'admin admin')
+        ? '${user.firstName} ${user.lastName}'
+        : 'luis luis';
 
     return Container(
       width: double.infinity,
@@ -679,52 +670,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
               // Controls (Right)
               Row(
                 children: [
-                  Icon(
-                    themeProvider.isDarkMode ? Icons.dark_mode : Icons.light_mode,
-                    color: Colors.white.withValues(alpha: 0.6),
-                    size: 18,
-                  ),
-                  Switch(
-                    value: themeProvider.isDarkMode,
-                    onChanged: (val) {
-                      themeProvider.toggleTheme();
-                    },
-                    activeThumbColor: const Color(0xFF3B48F6),
-                    activeTrackColor: Colors.white.withValues(alpha: 0.2),
-                    inactiveThumbColor: Colors.white,
-                    inactiveTrackColor: Colors.white.withValues(alpha: 0.1),
-                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                  const SizedBox(width: 8),
-                  // Notification bell with red badge
-                  Stack(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.08),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.notifications_none,
-                          color: Colors.white,
-                          size: 20,
-                        ),
-                      ),
-                      Positioned(
-                        right: 4,
-                        top: 4,
-                        child: Container(
-                          width: 8,
-                          height: 8,
-                          decoration: const BoxDecoration(
-                            color: Colors.redAccent,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                  const AdminNotificationBell(),
                   const SizedBox(width: 12),
                   // Avatar trigger
                   GestureDetector(
@@ -763,7 +709,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
               const SizedBox(width: 8),
               Expanded(
                 child: _buildMetricCard(
-                  icon: Icons.person,
+                  icon: Icons.circle,
                   iconColor: const Color(0xFF86EFAC), // Light green active person icon
                   countText: '$_activeUsersCount',
                   label: 'Active Users',
@@ -801,13 +747,13 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
     required String label,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(16),
+        color: Colors.white.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.1),
-          width: 1.5,
+          color: Colors.white.withValues(alpha: 0.15),
+          width: 1.0,
         ),
       ),
       child: Column(
@@ -815,12 +761,12 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, color: iconColor, size: 14),
-              const SizedBox(width: 4),
+              Icon(icon, color: iconColor, size: 16),
+              const SizedBox(width: 6),
               Text(
                 countText,
                 style: GoogleFonts.inter(
-                  fontSize: 15,
+                  fontSize: 18,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
                 ),
@@ -831,8 +777,8 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
           Text(
             label,
             style: GoogleFonts.inter(
-              fontSize: 9,
-              color: Colors.white.withValues(alpha: 0.8),
+              fontSize: 10,
+              color: const Color(0xFFA5B4FC),
               fontWeight: FontWeight.w500,
             ),
             textAlign: TextAlign.center,
@@ -844,7 +790,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
     );
   }
 
-  // Search filter tools
+  // Search filter tools with role selector dropdown popup
   Widget _buildSearchAndFilters(BuildContext context, ThemeProvider themeProvider) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
@@ -903,9 +849,108 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                 ),
               ),
               const SizedBox(width: 12),
-              // Filter Action Button
-              GestureDetector(
-                onTap: () => _selectDateRange(context),
+              // Role Filter PopupMenuButton
+              PopupMenuButton<String>(
+                offset: const Offset(0, 52),
+                elevation: 4,
+                color: themeProvider.isDarkMode ? const Color(0xFF1E293B) : Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                onSelected: (String val) {
+                  setState(() {
+                    if (val == 'Clear') {
+                      _selectedRoleFilter = null;
+                    } else {
+                      _selectedRoleFilter = val;
+                    }
+                  });
+                },
+                itemBuilder: (BuildContext context) {
+                  return [
+                    PopupMenuItem<String>(
+                      value: 'Students',
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: _selectedRoleFilter == 'Students'
+                              ? (themeProvider.isDarkMode ? Colors.white.withValues(alpha: 0.08) : Colors.grey.withValues(alpha: 0.15))
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          'Students',
+                          style: GoogleFonts.inter(
+                            fontSize: 13,
+                            fontWeight: _selectedRoleFilter == 'Students' ? FontWeight.bold : FontWeight.w500,
+                            color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF1F2937),
+                          ),
+                        ),
+                      ),
+                    ),
+                    PopupMenuItem<String>(
+                      value: 'Officers',
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: _selectedRoleFilter == 'Officers'
+                              ? (themeProvider.isDarkMode ? Colors.white.withValues(alpha: 0.08) : Colors.grey.withValues(alpha: 0.15))
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          'Officers',
+                          style: GoogleFonts.inter(
+                            fontSize: 13,
+                            fontWeight: _selectedRoleFilter == 'Officers' ? FontWeight.bold : FontWeight.w500,
+                            color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF1F2937),
+                          ),
+                        ),
+                      ),
+                    ),
+                    PopupMenuItem<String>(
+                      value: 'Admins',
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: _selectedRoleFilter == 'Admins'
+                              ? (themeProvider.isDarkMode ? Colors.white.withValues(alpha: 0.08) : Colors.grey.withValues(alpha: 0.15))
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          'Admins',
+                          style: GoogleFonts.inter(
+                            fontSize: 13,
+                            fontWeight: _selectedRoleFilter == 'Admins' ? FontWeight.bold : FontWeight.w500,
+                            color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF1F2937),
+                          ),
+                        ),
+                      ),
+                    ),
+                    if (_selectedRoleFilter != null)
+                      PopupMenuItem<String>(
+                        value: 'Clear',
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                          decoration: BoxDecoration(
+                            color: Colors.transparent,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            'Clear Filter',
+                            style: GoogleFonts.inter(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: themeProvider.isDarkMode ? Colors.grey.shade400 : const Color(0xFF6B7280),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ];
+                },
                 child: Container(
                   height: 46,
                   width: 46,
@@ -913,7 +958,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                     color: themeProvider.isDarkMode ? const Color(0xFF1E293B) : Colors.white,
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
-                      color: _selectedDateRange != null
+                      color: _selectedRoleFilter != null
                           ? const Color(0xFF3B48F6)
                           : (themeProvider.isDarkMode ? const Color(0xFF334155) : const Color(0xFFE5E7EB)),
                       width: 1.5,
@@ -928,7 +973,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                   ),
                   child: Icon(
                     Icons.filter_alt_outlined,
-                    color: _selectedDateRange != null
+                    color: _selectedRoleFilter != null
                         ? const Color(0xFF3B48F6)
                         : (themeProvider.isDarkMode ? Colors.grey.shade400 : VeriFiColors.textGrey),
                     size: 20,
@@ -937,49 +982,6 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
               ),
             ],
           ),
-          // Selected Date Tag
-          if (_selectedDateRange != null) ...[
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFEEF2FF),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: const Color(0xFFDCE4FF)),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.calendar_today, size: 12, color: Color(0xFF3B48F6)),
-                      const SizedBox(width: 6),
-                      Text(
-                        '${_formatDateCompact(_selectedDateRange!.start)} - ${_formatDateCompact(_selectedDateRange!.end)}',
-                        style: GoogleFonts.inter(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: const Color(0xFF3B48F6),
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            _selectedDateRange = null;
-                          });
-                        },
-                        child: const Icon(
-                          Icons.close,
-                          size: 14,
-                          color: Color(0xFF3B48F6),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ]
         ],
       ),
     );
@@ -1082,11 +1084,11 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                   ),
                   const SizedBox(width: 10),
                   GestureDetector(
-                    onTap: () => _showDeleteUserDialog(context, realIndex),
-                    child: const Icon(
-                      Icons.delete_outline,
+                    onTap: () => _showArchiveUserDialog(context, item, realIndex),
+                    child: Icon(
+                      Icons.archive_outlined,
                       size: 20,
-                      color: Color(0xFFEF4444),
+                      color: themeProvider.isDarkMode ? Colors.grey.shade400 : const Color(0xFF4B5563),
                     ),
                   ),
                 ],

@@ -6,6 +6,7 @@ import 'package:flutter_application_transparatech/features/auth/presentation/pro
 import 'package:flutter_application_transparatech/core/providers/theme_provider.dart';
 import 'package:flutter_application_transparatech/features/admin/presentation/providers/admin_queue_provider.dart';
 import 'package:flutter_application_transparatech/features/admin/presentation/widgets/profile_dropdown.dart';
+import 'package:flutter_application_transparatech/features/admin/presentation/widgets/admin_notification_bell.dart';
 
 class AdminQueueScreen extends StatefulWidget {
   const AdminQueueScreen({super.key});
@@ -23,43 +24,14 @@ class _AdminQueueScreenState extends State<AdminQueueScreen> {
     super.dispose();
   }
 
-  // Date range picker helper (Standard Light Redesign)
-  Future<void> _selectDateRange(BuildContext context, AdminQueueProvider queueProvider) async {
-    final DateTimeRange? picked = await showDateRangePicker(
+  void _showDateFilterDialog(BuildContext context, AdminQueueProvider queueProvider) {
+    showDialog(
       context: context,
-      initialDateRange: queueProvider.selectedDateRange,
-      firstDate: DateTime(2025, 1, 1),
-      lastDate: DateTime(2027, 12, 31),
-      builder: (context, child) {
-        return Theme(
-          data: ThemeData.light(useMaterial3: true).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: Color(0xFF3B48F6), // Selected highlight system blue
-              onPrimary: Colors.white,
-              surface: Colors.white, // Modal background
-              onSurface: Color(0xFF1F2937), // Inactive dates and headers high-contrast dark grey
-            ),
-            scaffoldBackgroundColor: Colors.white,
-            appBarTheme: const AppBarTheme(
-              backgroundColor: Colors.white,
-              foregroundColor: Color(0xFF1F2937),
-              elevation: 0,
-              iconTheme: IconThemeData(color: Color(0xFF1F2937)),
-            ),
-            textButtonTheme: TextButtonThemeData(
-              style: TextButton.styleFrom(
-                foregroundColor: const Color(0xFF3B48F6),
-              ),
-            ),
-          ),
-          child: child!,
-        );
+      barrierColor: Colors.black.withValues(alpha: 0.4), // Dim backdrop
+      builder: (BuildContext context) {
+        return _DateFilterDialog(queueProvider: queueProvider);
       },
     );
-
-    if (picked != null) {
-      queueProvider.setSelectedDateRange(picked);
-    }
   }
 
   void _showConfirmationDialog({
@@ -194,7 +166,9 @@ class _AdminQueueScreenState extends State<AdminQueueScreen> {
   ) {
     final authProvider = Provider.of<AuthProvider>(context);
     final user = authProvider.currentUser;
-    final String fullName = user != null ? '${user.firstName} ${user.lastName}' : 'admin admin';
+    final String fullName = (user != null && '${user.firstName} ${user.lastName}'.trim().isNotEmpty && '${user.firstName} ${user.lastName}' != 'admin admin')
+        ? '${user.firstName} ${user.lastName}'
+        : 'luis luis';
 
     return Container(
       width: double.infinity,
@@ -239,53 +213,7 @@ class _AdminQueueScreenState extends State<AdminQueueScreen> {
               // Controls
               Row(
                 children: [
-                  // Light/Dark mode toggle
-                  Icon(
-                    themeProvider.isDarkMode ? Icons.dark_mode : Icons.light_mode,
-                    color: Colors.white.withValues(alpha: 0.6),
-                    size: 18,
-                  ),
-                  Switch(
-                    value: themeProvider.isDarkMode,
-                    onChanged: (val) {
-                      themeProvider.toggleTheme();
-                    },
-                    activeThumbColor: const Color(0xFF3B48F6),
-                    activeTrackColor: Colors.white.withValues(alpha: 0.2),
-                    inactiveThumbColor: Colors.white,
-                    inactiveTrackColor: Colors.white.withValues(alpha: 0.1),
-                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                  const SizedBox(width: 8),
-                  // Notification bell with badge
-                  Stack(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.08),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.notifications_none,
-                          color: Colors.white,
-                          size: 20,
-                        ),
-                      ),
-                      Positioned(
-                        right: 4,
-                        top: 4,
-                        child: Container(
-                          width: 8,
-                          height: 8,
-                          decoration: const BoxDecoration(
-                            color: Colors.redAccent,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                  const AdminNotificationBell(),
                   const SizedBox(width: 12),
                   // Circular Shield Profile Avatar Button
                   GestureDetector(
@@ -312,19 +240,15 @@ class _AdminQueueScreenState extends State<AdminQueueScreen> {
             ],
           ),
           const SizedBox(height: 24),
-          // Metric Counter Row
+          // Metric Counter Row (Static, flat overview counters)
           Row(
             children: [
               Expanded(
                 child: _buildMetricCard(
                   icon: Icons.access_time_filled,
                   iconColor: const Color(0xFFFFB020),
-                  count: pending,
+                  countText: '$pending',
                   label: 'Pending Review',
-                  isActive: queueProvider.selectedStatusFilter == 'PENDING',
-                  onTap: () {
-                    queueProvider.setSelectedStatusFilter('PENDING');
-                  },
                 ),
               ),
               const SizedBox(width: 10),
@@ -332,12 +256,8 @@ class _AdminQueueScreenState extends State<AdminQueueScreen> {
                 child: _buildMetricCard(
                   icon: Icons.check_circle,
                   iconColor: const Color(0xFF2E7D32),
-                  count: approved,
+                  countText: '$approved',
                   label: 'Approved',
-                  isActive: queueProvider.selectedStatusFilter == 'APPROVED',
-                  onTap: () {
-                    queueProvider.setSelectedStatusFilter('APPROVED');
-                  },
                 ),
               ),
               const SizedBox(width: 10),
@@ -345,12 +265,8 @@ class _AdminQueueScreenState extends State<AdminQueueScreen> {
                 child: _buildMetricCard(
                   icon: Icons.cancel,
                   iconColor: const Color(0xFFC62828),
-                  count: rejected,
+                  countText: '$rejected',
                   label: 'Rejected',
-                  isActive: queueProvider.selectedStatusFilter == 'REJECTED',
-                  onTap: () {
-                    queueProvider.setSelectedStatusFilter('REJECTED');
-                  },
                 ),
               ),
             ],
@@ -360,63 +276,53 @@ class _AdminQueueScreenState extends State<AdminQueueScreen> {
     );
   }
 
-  // Semi-transparent Metric Card Widget
+  // Semi-transparent Metric Card Widget (Flat and static summary counter)
   Widget _buildMetricCard({
     required IconData icon,
     required Color iconColor,
-    required int count,
+    required String countText,
     required String label,
-    required bool isActive,
-    required VoidCallback onTap,
   }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-        decoration: BoxDecoration(
-          color: isActive 
-              ? Colors.white.withValues(alpha: 0.15) 
-              : Colors.white.withValues(alpha: 0.06),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isActive 
-                ? Colors.white.withValues(alpha: 0.4) 
-                : Colors.white.withValues(alpha: 0.1),
-            width: 1.5,
-          ),
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.15),
+          width: 1.0,
         ),
-        child: Column(
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(icon, color: iconColor, size: 16),
-                const SizedBox(width: 6),
-                Text(
-                  '$count',
-                  style: GoogleFonts.inter(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: iconColor, size: 16),
+              const SizedBox(width: 6),
+              Text(
+                countText,
+                style: GoogleFonts.inter(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
                 ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: GoogleFonts.inter(
-                fontSize: 10,
-                color: Colors.white.withValues(alpha: 0.8),
-                fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
               ),
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: GoogleFonts.inter(
+              fontSize: 10,
+              color: const Color(0xFFA5B4FC),
+              fontWeight: FontWeight.w500,
             ),
-          ],
-        ),
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
       ),
     );
   }
@@ -484,34 +390,52 @@ class _AdminQueueScreenState extends State<AdminQueueScreen> {
               const SizedBox(width: 12),
               // Filter Button
               GestureDetector(
-                onTap: () => _selectDateRange(context, queueProvider),
-                child: Container(
-                  height: 46,
-                  width: 46,
-                  decoration: BoxDecoration(
-                    color: themeProvider.isDarkMode ? const Color(0xFF1E293B) : Colors.white,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: queueProvider.selectedDateRange != null 
-                          ? const Color(0xFF3B48F6) 
-                          : (themeProvider.isDarkMode ? const Color(0xFF334155) : const Color(0xFFE5E7EB)),
-                      width: 1.5,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.02),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
+                onTap: () => _showDateFilterDialog(context, queueProvider),
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Container(
+                      height: 46,
+                      width: 46,
+                      decoration: BoxDecoration(
+                        color: themeProvider.isDarkMode ? const Color(0xFF1E293B) : Colors.white,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: queueProvider.selectedDateRange != null 
+                              ? const Color(0xFF3B48F6) 
+                              : (themeProvider.isDarkMode ? const Color(0xFF334155) : const Color(0xFFE5E7EB)),
+                          width: 1.5,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.02),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                  child: Icon(
-                    Icons.filter_alt_outlined, 
-                    color: queueProvider.selectedDateRange != null 
-                        ? const Color(0xFF3B48F6) 
-                        : (themeProvider.isDarkMode ? Colors.grey.shade400 : VeriFiColors.textGrey), 
-                    size: 20
-                  ),
+                      child: Icon(
+                        Icons.filter_alt_outlined, 
+                        color: queueProvider.selectedDateRange != null 
+                            ? const Color(0xFF3B48F6) 
+                            : (themeProvider.isDarkMode ? Colors.grey.shade400 : VeriFiColors.textGrey), 
+                        size: 20
+                      ),
+                    ),
+                    if (queueProvider.selectedDateRange != null)
+                      Positioned(
+                        right: -2,
+                        top: -2,
+                        child: Container(
+                          width: 10,
+                          height: 10,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFF3B48F6),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ),
             ],
@@ -570,6 +494,16 @@ class _AdminQueueScreenState extends State<AdminQueueScreen> {
   // Submissions Feed Main List
   Widget _buildSubmissionsFeed(List<QueueSubmission> list, AdminQueueProvider queueProvider) {
     final themeProvider = Provider.of<ThemeProvider>(context);
+    
+    final String label;
+    if (queueProvider.selectedStatusFilter == 'PENDING') {
+      label = 'Pending Submissions (${list.length})';
+    } else if (queueProvider.selectedStatusFilter == 'APPROVED') {
+      label = 'Approved Submissions (${list.length})';
+    } else {
+      label = 'Rejected Submissions (${list.length})';
+    }
+
     return Container(
       width: double.infinity,
       color: themeProvider.isDarkMode ? const Color(0xFF0F172A) : const Color(0xFFF8F9FB),
@@ -577,13 +511,123 @@ class _AdminQueueScreenState extends State<AdminQueueScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // List Title
-          Text(
-            'Submissions (${list.length})',
-            style: GoogleFonts.inter(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF1F2937),
+          // Interactive Title Selector Button
+          PopupMenuButton<String>(
+            offset: const Offset(0, 32),
+            elevation: 4,
+            color: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            tooltip: 'Filter Submissions',
+            onSelected: (String val) {
+              queueProvider.setSelectedStatusFilter(val);
+            },
+            itemBuilder: (BuildContext context) {
+              return [
+                PopupMenuItem<String>(
+                  value: 'PENDING',
+                  padding: EdgeInsets.zero,
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    color: queueProvider.selectedStatusFilter == 'PENDING'
+                        ? const Color(0xFFEFF6FF) // Faint blue background highlight tint
+                        : Colors.transparent,
+                    child: Row(
+                      children: [
+                        const Icon(Icons.description_outlined, color: Colors.grey, size: 18),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Pending Review',
+                          style: GoogleFonts.inter(
+                            fontSize: 14,
+                            color: const Color(0xFF0F2547),
+                            fontWeight: queueProvider.selectedStatusFilter == 'PENDING'
+                                ? FontWeight.bold
+                                : FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const PopupMenuDivider(height: 1),
+                PopupMenuItem<String>(
+                  value: 'APPROVED',
+                  padding: EdgeInsets.zero,
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    color: queueProvider.selectedStatusFilter == 'APPROVED'
+                        ? const Color(0xFFEFF6FF)
+                        : Colors.transparent,
+                    child: Row(
+                      children: [
+                        const Icon(Icons.check_circle, color: Color(0xFF2E7D32), size: 18),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Approved',
+                          style: GoogleFonts.inter(
+                            fontSize: 14,
+                            color: const Color(0xFF0F2547),
+                            fontWeight: queueProvider.selectedStatusFilter == 'APPROVED'
+                                ? FontWeight.bold
+                                : FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const PopupMenuDivider(height: 1),
+                PopupMenuItem<String>(
+                  value: 'REJECTED',
+                  padding: EdgeInsets.zero,
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    color: queueProvider.selectedStatusFilter == 'REJECTED'
+                        ? const Color(0xFFEFF6FF)
+                        : Colors.transparent,
+                    child: Row(
+                      children: [
+                        const Icon(Icons.cancel, color: Color(0xFFC62828), size: 18),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Rejected',
+                          style: GoogleFonts.inter(
+                            fontSize: 14,
+                            color: const Color(0xFF0F2547),
+                            fontWeight: queueProvider.selectedStatusFilter == 'REJECTED'
+                                ? FontWeight.bold
+                                : FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ];
+            },
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  label,
+                  style: GoogleFonts.inter(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF0F2547),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Icon(
+                  Icons.arrow_drop_down,
+                  color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF0F2547),
+                  size: 20,
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 12),
@@ -1247,5 +1291,490 @@ class _AdminQueueScreenState extends State<AdminQueueScreen> {
     final ampm = date.hour >= 12 ? 'PM' : 'AM';
     final hour = date.hour > 12 ? date.hour - 12 : (date.hour == 0 ? 12 : date.hour);
     return '$month ${date.day}, ${date.year} at $hour:$minute $ampm';
+  }
+}
+
+class _DateFilterDialog extends StatefulWidget {
+  final AdminQueueProvider queueProvider;
+  const _DateFilterDialog({required this.queueProvider});
+
+  @override
+  State<_DateFilterDialog> createState() => _DateFilterDialogState();
+}
+
+class _DateFilterDialogState extends State<_DateFilterDialog> {
+  late DateTime _activeMonth;
+  DateTime? _startDate;
+  DateTime? _endDate;
+  String _activeTarget = 'START';
+  bool _slideRight = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final currentRange = widget.queueProvider.selectedDateRange;
+    if (currentRange != null) {
+      _startDate = currentRange.start;
+      _endDate = currentRange.end;
+    }
+    
+    final baseDate = _startDate ?? DateTime.now();
+    _activeMonth = DateTime(baseDate.year, baseDate.month, 1);
+  }
+
+  String _getMonthName(int month) {
+    const months = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    return months[month - 1];
+  }
+
+  String _formatSummaryDate(DateTime date) {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return '${months[date.month - 1]} ${date.day}';
+  }
+
+  bool _isBetween(DateTime date, DateTime start, DateTime end) {
+    final d = DateTime(date.year, date.month, date.day);
+    final s = DateTime(start.year, start.month, start.day);
+    final e = DateTime(end.year, end.month, end.day);
+    return d.isAfter(s) && d.isBefore(e);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final firstOfMonth = DateTime(_activeMonth.year, _activeMonth.month, 1);
+    final offset = firstOfMonth.weekday % 7; // Sunday=0, Monday=1, ..., Saturday=6
+    final lastOfMonth = DateTime(_activeMonth.year, _activeMonth.month + 1, 0);
+    final totalDaysToShow = offset + lastOfMonth.day;
+    final totalCells = totalDaysToShow <= 35 ? 35 : 42;
+    final gridStartDate = firstOfMonth.subtract(Duration(days: offset));
+
+    return Dialog(
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        constraints: const BoxConstraints(maxWidth: 360),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Pop-up Header Row
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Filter by Date',
+                  style: GoogleFonts.inter(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF0F2547),
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: const Icon(Icons.close, color: Color(0xFF6B7280), size: 20),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+
+            // Date-Range Summary Display
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'START',
+                        style: GoogleFonts.inter(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: _activeTarget == 'START' ? const Color(0xFF3B48F6) : const Color(0xFF9CA3AF),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _startDate != null ? _formatSummaryDate(_startDate!) : '—',
+                        style: GoogleFonts.inter(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF0F2547),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  height: 32,
+                  width: 1,
+                  color: const Color(0xFFE5E7EB),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'END',
+                        style: GoogleFonts.inter(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: _activeTarget == 'END' ? const Color(0xFF3B48F6) : const Color(0xFF9CA3AF),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _endDate != null ? _formatSummaryDate(_endDate!) : '—',
+                        style: GoogleFonts.inter(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF0F2547),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            // Selection Target Row Toggle
+            GestureDetector(
+              onTap: () {
+                setState(() {
+                  _activeTarget = _activeTarget == 'START' ? 'END' : 'START';
+                });
+              },
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFF3B48F6), width: 1.0),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.calendar_today, color: Color(0xFF3B48F6), size: 16),
+                    const SizedBox(width: 8),
+                    Text(
+                      _activeTarget == 'START' ? 'START DATE' : 'END DATE',
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFF3B48F6),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Month Selection Header Row
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _slideRight = true;
+                      _activeMonth = DateTime(_activeMonth.year, _activeMonth.month - 1, 1);
+                    });
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF3F4F6),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.chevron_left, color: Color(0xFF374151), size: 20),
+                  ),
+                ),
+                Text(
+                  '${_getMonthName(_activeMonth.month)} ${_activeMonth.year}',
+                  style: GoogleFonts.inter(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF0F2547),
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _slideRight = false;
+                      _activeMonth = DateTime(_activeMonth.year, _activeMonth.month + 1, 1);
+                    });
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF3F4F6),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.chevron_right, color: Color(0xFF374151), size: 20),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            // Days of the Week Header
+            Row(
+              children: ['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day) {
+                return Expanded(
+                  child: Center(
+                    child: Text(
+                      day,
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF9CA3AF),
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 8),
+
+            // 7-Column Day Matrix Grid wrapped in Slide Animation
+            SizedBox(
+              height: 250,
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                transitionBuilder: (Widget child, Animation<double> animation) {
+                  final offset = _slideRight
+                      ? Tween<Offset>(begin: const Offset(-1.0, 0.0), end: Offset.zero).animate(
+                          CurvedAnimation(parent: animation, curve: Curves.easeInOut),
+                        )
+                      : Tween<Offset>(begin: const Offset(1.0, 0.0), end: Offset.zero).animate(
+                          CurvedAnimation(parent: animation, curve: Curves.easeInOut),
+                        );
+                  return ClipRect(
+                    child: SlideTransition(
+                      position: offset,
+                      child: child,
+                    ),
+                  );
+                },
+                child: GridView.builder(
+                  key: ValueKey<DateTime>(_activeMonth),
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: totalCells,
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 7,
+                    mainAxisSpacing: 8,
+                    crossAxisSpacing: 8,
+                  ),
+                  itemBuilder: (context, index) {
+                    final cellDate = DateTime(
+                      gridStartDate.year,
+                      gridStartDate.month,
+                      gridStartDate.day + index,
+                    );
+                    
+                    final isStart = _startDate != null &&
+                        cellDate.year == _startDate!.year &&
+                        cellDate.month == _startDate!.month &&
+                        cellDate.day == _startDate!.day;
+                    
+                    final isEnd = _endDate != null &&
+                        cellDate.year == _endDate!.year &&
+                        cellDate.month == _endDate!.month &&
+                        cellDate.day == _endDate!.day;
+
+                    final isBetween = _startDate != null && _endDate != null && _isBetween(cellDate, _startDate!, _endDate!);
+                    final isCurrentMonth = cellDate.month == _activeMonth.month;
+
+                    // Decoration styling
+                    BoxDecoration? cellDecoration;
+                    Color textColor;
+
+                    if (isStart || isEnd) {
+                      cellDecoration = const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Color(0xFF3B48F6),
+                      );
+                      textColor = Colors.white;
+                    } else if (isBetween) {
+                      cellDecoration = const BoxDecoration(
+                        shape: BoxShape.rectangle,
+                        color: Color(0xFFE3F2FD),
+                      );
+                      textColor = const Color(0xFF374151);
+                    } else {
+                      cellDecoration = const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.transparent,
+                      );
+                      textColor = isCurrentMonth
+                          ? const Color(0xFF374151)
+                          : Colors.grey.shade300;
+                    }
+
+                    return GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          if (_activeTarget == 'START') {
+                            _startDate = cellDate;
+                            _endDate = null;
+                            _activeTarget = 'END';
+                          } else {
+                            if (_startDate == null) {
+                              _startDate = cellDate;
+                              _endDate = null;
+                              _activeTarget = 'END';
+                            } else {
+                              final cellDateOnly = DateTime(cellDate.year, cellDate.month, cellDate.day);
+                              final startDateOnly = DateTime(_startDate!.year, _startDate!.month, _startDate!.day);
+                              if (cellDateOnly.isBefore(startDateOnly)) {
+                                _startDate = cellDate;
+                                _endDate = null;
+                                _activeTarget = 'END';
+                              } else {
+                                _endDate = cellDate;
+                              }
+                            }
+                          }
+                        });
+                      },
+                      child: Container(
+                        alignment: Alignment.center,
+                        decoration: cellDecoration,
+                        child: (isStart || isEnd || isBetween)
+                            ? Text(
+                                '${cellDate.day}',
+                                style: GoogleFonts.inter(
+                                  fontSize: 13,
+                                  fontWeight: (isStart || isEnd) ? FontWeight.bold : FontWeight.w500,
+                                  color: textColor,
+                                ),
+                              )
+                            : Material(
+                                type: MaterialType.transparency,
+                                child: InkWell(
+                                  customBorder: const CircleBorder(),
+                                  splashColor: const Color(0xFFEFF6FF),
+                                  onTap: () {
+                                    setState(() {
+                                      if (_activeTarget == 'START') {
+                                        _startDate = cellDate;
+                                        _endDate = null;
+                                        _activeTarget = 'END';
+                                      } else {
+                                        if (_startDate == null) {
+                                          _startDate = cellDate;
+                                          _endDate = null;
+                                          _activeTarget = 'END';
+                                        } else {
+                                          final cellDateOnly = DateTime(cellDate.year, cellDate.month, cellDate.day);
+                                          final startDateOnly = DateTime(_startDate!.year, _startDate!.month, _startDate!.day);
+                                          if (cellDateOnly.isBefore(startDateOnly)) {
+                                            _startDate = cellDate;
+                                            _endDate = null;
+                                            _activeTarget = 'END';
+                                          } else {
+                                            _endDate = cellDate;
+                                          }
+                                        }
+                                      }
+                                    });
+                                  },
+                                  child: Container(
+                                    alignment: Alignment.center,
+                                    child: Text(
+                                      '${cellDate.day}',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 13,
+                                        fontWeight: isCurrentMonth ? FontWeight.w500 : FontWeight.normal,
+                                        color: textColor,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // Action Confirmation Bar
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Text(
+                      'CANCEL',
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFF3B48F6),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                GestureDetector(
+                  onTap: (_startDate == null || _endDate == null)
+                      ? null
+                      : () {
+                          final startDateTime = DateTime(
+                            _startDate!.year,
+                            _startDate!.month,
+                            _startDate!.day,
+                            0,
+                            0,
+                            0,
+                          );
+                          final endDateTime = DateTime(
+                            _endDate!.year,
+                            _endDate!.month,
+                            _endDate!.day,
+                            23,
+                            59,
+                            59,
+                          );
+                          widget.queueProvider.setSelectedDateRange(
+                            DateTimeRange(
+                              start: startDateTime,
+                              end: endDateTime,
+                            ),
+                          );
+                          Navigator.pop(context);
+                        },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Text(
+                      'OK',
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: (_startDate == null || _endDate == null)
+                            ? const Color(0xFF3B48F6).withValues(alpha: 0.4)
+                            : const Color(0xFF3B48F6),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

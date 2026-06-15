@@ -10,6 +10,8 @@ import 'package:flutter_application_transparatech/features/admin/presentation/wi
 import 'package:flutter_application_transparatech/features/admin/presentation/pages/admin_analytics_page.dart';
 import 'package:flutter_application_transparatech/features/admin/presentation/pages/admin_organizations_page.dart';
 import 'package:flutter_application_transparatech/features/admin/presentation/pages/admin_users_page.dart';
+import 'package:flutter_application_transparatech/features/admin/presentation/providers/admin_notification_provider.dart';
+import 'package:flutter_application_transparatech/features/admin/presentation/widgets/admin_notification_bell.dart';
 
 class AdminDashboardPage extends StatefulWidget {
   final int initialIndex;
@@ -21,6 +23,8 @@ class AdminDashboardPage extends StatefulWidget {
 
 class _AdminDashboardPageState extends State<AdminDashboardPage> {
   late int _selectedIndex;
+  String? _organizationSearchQuery;
+  String? _usersRoleFilter;
 
   @override
   void initState() {
@@ -31,6 +35,26 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
+    final notificationProvider = Provider.of<AdminNotificationProvider>(context);
+
+    if (notificationProvider.navigateToTab != null) {
+      final tabIndex = notificationProvider.navigateToTab!;
+      final orgFilter = notificationProvider.orgFilter;
+      final roleFilter = notificationProvider.roleFilter;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        setState(() {
+          _selectedIndex = tabIndex;
+          if (orgFilter != null) {
+            _organizationSearchQuery = orgFilter;
+          }
+          if (roleFilter != null) {
+            _usersRoleFilter = roleFilter;
+          }
+        });
+        notificationProvider.clearNavigation();
+      });
+    }
+
     return Scaffold(
       backgroundColor: themeProvider.isDarkMode ? const Color(0xFF0F172A) : const Color(0xFFFAFAFA),
       body: _buildActiveTab(),
@@ -49,12 +73,16 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           onTap: (index) {
             setState(() {
               _selectedIndex = index;
+              if (index != 3) {
+                _organizationSearchQuery = null;
+              }
+              _usersRoleFilter = null;
             });
           },
           type: BottomNavigationBarType.fixed,
-          backgroundColor: themeProvider.isDarkMode ? const Color(0xFF1E293B) : Colors.white,
+          backgroundColor: Colors.white, // Solid white bar locked fixed
           selectedItemColor: const Color(0xFF3B48F6),
-          unselectedItemColor: themeProvider.isDarkMode ? Colors.grey.shade500 : Colors.grey.shade400,
+          unselectedItemColor: const Color(0xFF9CA3AF), // Muted gray inactive format
           selectedLabelStyle: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600),
           unselectedLabelStyle: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w500),
           elevation: 0,
@@ -93,63 +121,142 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   Widget _buildActiveTab() {
     switch (_selectedIndex) {
       case 0:
-        return const AdminHomeScreen();
+        return AdminHomeScreen(
+          onNavigateToTab: (index, {statusFilter, highlightQuery}) {
+            setState(() {
+              _selectedIndex = index;
+            });
+            final queueProvider = Provider.of<AdminQueueProvider>(context, listen: false);
+            if (statusFilter != null) {
+              queueProvider.setSelectedStatusFilter(statusFilter);
+            }
+            if (highlightQuery != null) {
+              queueProvider.setSearchQuery(highlightQuery);
+            } else {
+              queueProvider.setSearchQuery('');
+            }
+            queueProvider.setSelectedDateRange(null); // Clear active date filters
+          },
+        );
       case 1:
         return const AdminQueueScreen();
       case 2:
-        return const AdminAnalyticsScreen();
+        return AdminAnalyticsScreen(
+          onNavigateToTab: (index, {orgFilter}) {
+            setState(() {
+              _selectedIndex = index;
+              _organizationSearchQuery = orgFilter;
+            });
+          },
+        );
       case 3:
-        return const AdminOrganizationsScreen();
+        return AdminOrganizationsScreen(initialSearchQuery: _organizationSearchQuery);
       case 4:
-        return const AdminUsersScreen();
+        return AdminUsersScreen(initialRoleFilter: _usersRoleFilter);
       default:
-        return const AdminHomeScreen();
+        return AdminHomeScreen(
+          onNavigateToTab: (index, {statusFilter, highlightQuery}) {
+            setState(() {
+              _selectedIndex = index;
+            });
+          },
+        );
     }
   }
 }
 
 class AdminHomeScreen extends StatelessWidget {
-  const AdminHomeScreen({super.key});
+  final Function(int index, {String? statusFilter, String? highlightQuery})? onNavigateToTab;
+  const AdminHomeScreen({super.key, this.onNavigateToTab});
 
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
     final queueProvider = Provider.of<AdminQueueProvider>(context);
-    final pendingSubmissions = queueProvider.getFilteredSubmissions(forceStatusFilter: 'PENDING');
+
+    // Dynamic database lists based on status filter
+    final pendingSubmissions = queueProvider.submissions.where((s) => s.status == 'PENDING').toList();
+    pendingSubmissions.sort((a, b) => b.uploadDate.compareTo(a.uploadDate));
+    final recentPending = pendingSubmissions.take(4).toList();
+
+    final approvedSubmissions = queueProvider.submissions.where((s) => s.status == 'APPROVED').toList();
+    approvedSubmissions.sort((a, b) => b.uploadDate.compareTo(a.uploadDate));
+    final recentApproved = approvedSubmissions.take(4).toList();
 
     return Column(
       children: [
+        // 1. Fixed Top Header Module
         _buildHeader(context, themeProvider),
+        
+        // 2. Scrollable content feed area
         Expanded(
           child: Container(
             color: themeProvider.isDarkMode ? const Color(0xFF0F172A) : const Color(0xFFF8F9FB),
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Pending Submissions (${pendingSubmissions.length})',
-                  style: GoogleFonts.inter(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF1F2937),
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // A. Pending Submissions Section Header
+                  Text(
+                    'Pending Submissions (${pendingSubmissions.length})',
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF1F2937),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                Expanded(
-                  child: pendingSubmissions.isEmpty
-                      ? _buildEmptyState(context)
-                      : ListView.builder(
-                          itemCount: pendingSubmissions.length,
-                          padding: const EdgeInsets.only(bottom: 24),
-                          physics: const BouncingScrollPhysics(),
-                          itemBuilder: (context, index) {
-                            final item = pendingSubmissions[index];
-                            return _buildSubmissionCard(context, item, queueProvider);
-                          },
-                        ),
-                ),
-              ],
+                  const SizedBox(height: 12),
+                  // AnimatedSwitcher for smooth fade transition when processed
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    child: recentPending.isEmpty
+                        ? _buildEmptyState(context, isPending: true)
+                        : Column(
+                            key: ValueKey('pending_${recentPending.map((e) => e.id).join(',')}'),
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              ...recentPending.map((item) => _buildSubmissionCard(context, item, queueProvider, isPending: true)),
+                              const SizedBox(height: 12),
+                              _buildSeeMoreButton(() {
+                                onNavigateToTab?.call(1, statusFilter: 'PENDING');
+                              }),
+                            ],
+                          ),
+                  ),
+
+                  const SizedBox(height: 28),
+
+                  // B. Recent Approvals Section Header
+                  Text(
+                    'Recent Approvals (${approvedSubmissions.length})',
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF1F2937),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    child: recentApproved.isEmpty
+                        ? _buildEmptyState(context, isPending: false)
+                        : Column(
+                            key: ValueKey('approved_${recentApproved.map((e) => e.id).join(',')}'),
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              ...recentApproved.map((item) => _buildSubmissionCard(context, item, queueProvider, isPending: false)),
+                              const SizedBox(height: 12),
+                              _buildSeeMoreButton(() {
+                                onNavigateToTab?.call(1, statusFilter: 'APPROVED');
+                              }),
+                            ],
+                          ),
+                  ),
+                  const SizedBox(height: 24),
+                ],
+              ),
             ),
           ),
         ),
@@ -157,14 +264,42 @@ class AdminHomeScreen extends StatelessWidget {
     );
   }
 
+  // Centered See More Button Row
+  Widget _buildSeeMoreButton(VoidCallback onTap) {
+    return Center(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: const Color(0xFFE5E7EB),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(
+            'See More',
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF4B5563),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Header banner layout with deep navy background
   Widget _buildHeader(BuildContext context, ThemeProvider themeProvider) {
     final authProvider = Provider.of<AuthProvider>(context);
     final user = authProvider.currentUser;
-    final String fullName = user != null ? '${user.firstName} ${user.lastName}' : 'admin admin';
+    // Fallback profile title is forced to "luis luis"
+    final String fullName = (user != null && '${user.firstName} ${user.lastName}'.trim().isNotEmpty && '${user.firstName} ${user.lastName}' != 'admin admin')
+        ? '${user.firstName} ${user.lastName}'
+        : 'luis luis';
 
     return Container(
       width: double.infinity,
-      color: const Color(0xFF0F2547), // Deep navy blue
+      color: const Color(0xFF0F2547), // Solid Deep Navy Blue
       padding: EdgeInsets.only(
         top: MediaQuery.of(context).padding.top + 16,
         left: 20,
@@ -175,7 +310,7 @@ class AdminHomeScreen extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Greeting Text
+          // Greeting Text Column
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -198,56 +333,10 @@ class AdminHomeScreen extends StatelessWidget {
               ),
             ],
           ),
-          // Controls
+          // Controls (Switch / toggle completely removed)
           Row(
             children: [
-              // Light/Dark mode toggle
-              Icon(
-                themeProvider.isDarkMode ? Icons.dark_mode : Icons.light_mode,
-                color: Colors.white.withValues(alpha: 0.6),
-                size: 18,
-              ),
-              Switch(
-                value: themeProvider.isDarkMode,
-                onChanged: (val) {
-                  themeProvider.toggleTheme();
-                },
-                activeThumbColor: const Color(0xFF3B48F6),
-                activeTrackColor: Colors.white.withValues(alpha: 0.2),
-                inactiveThumbColor: Colors.white,
-                inactiveTrackColor: Colors.white.withValues(alpha: 0.1),
-                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-              const SizedBox(width: 8),
-              // Notification bell with badge
-              Stack(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.08),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.notifications_none,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                  ),
-                  Positioned(
-                    right: 4,
-                    top: 4,
-                    child: Container(
-                      width: 8,
-                      height: 8,
-                      decoration: const BoxDecoration(
-                        color: Colors.redAccent,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+              const AdminNotificationBell(),
               const SizedBox(width: 12),
               // Circular Shield Profile Avatar Button
               GestureDetector(
@@ -276,187 +365,112 @@ class AdminHomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSubmissionCard(BuildContext context, QueueSubmission item, AdminQueueProvider queueProvider) {
+  // Clean flat submission / approval card component
+  Widget _buildSubmissionCard(
+    BuildContext context,
+    QueueSubmission item,
+    AdminQueueProvider queueProvider, {
+    required bool isPending,
+  }) {
     final themeProvider = Provider.of<ThemeProvider>(context);
-    return GestureDetector(
-      onTap: () {
-        _showDocumentDetailsOverlay(context, item, queueProvider);
-      },
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: themeProvider.isDarkMode ? const Color(0xFF1E293B) : Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: themeProvider.isDarkMode ? const Color(0xFF334155) : const Color(0xFFEEF2FF),
-            width: 1.5,
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: themeProvider.isDarkMode ? const Color(0xFF1E293B) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: themeProvider.isDarkMode ? const Color(0xFF334155) : const Color(0xFFEEF2FF),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.02),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Top Card Row: Icon, Title, Chevron
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Light Blue Sheet Icon
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: themeProvider.isDarkMode ? const Color(0xFF0F2547) : const Color(0xFFEFF6FF), // soft blue
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(
-                    Icons.description_outlined,
-                    color: Color(0xFF3B48F6),
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                // Text Stack
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        item.title,
-                        style: GoogleFonts.inter(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: themeProvider.isDarkMode ? Colors.white : VeriFiColors.textDark,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '${item.organization} | ${item.senderName} | ${item.documentType}',
-                        style: GoogleFonts.inter(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: themeProvider.isDarkMode ? Colors.grey.shade400 : VeriFiColors.textLight,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                // Chevron icon
-                const Icon(
-                  Icons.chevron_right,
-                  color: Color(0xFF9CA3AF),
-                  size: 18,
-                ),
-              ],
-            ),
-            
-            // Show Buttons ONLY for Pending Items
-            if (item.status == 'PENDING') ...[
-              const SizedBox(height: 16),
-              // Isolated gesture detector row to prevent event bubbling
-              GestureDetector(
-                onTap: () {}, // Blocks bubble-up tap triggers
-                child: Row(
-                  children: [
-                    // Approve Button
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () {
-                          _showConfirmationDialog(
-                            context: context,
-                            action: 'approve',
-                            onConfirm: () {
-                              queueProvider.updateSubmissionStatus(item.id, 'APPROVED');
-                              _showStatusMessage(context, 'APPROVED');
-                            },
-                          );
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFE8F5E9), // Soft green
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(
-                                Icons.thumb_up_outlined,
-                                color: Color(0xFF2E7D32),
-                                size: 14,
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                'Approve',
-                                style: GoogleFonts.inter(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: const Color(0xFF2E7D32),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Clickable body: does not overlap chevron boundary
+          Expanded(
+            child: GestureDetector(
+              onTap: () {
+                // Highlight entry inside Queue tab by status & search title
+                onNavigateToTab?.call(1, statusFilter: item.status, highlightQuery: item.title);
+              },
+              behavior: HitTestBehavior.opaque,
+              child: Row(
+                children: [
+                  // Left side light blue/green badge box container
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: isPending
+                          ? (themeProvider.isDarkMode ? const Color(0xFF0F2547) : const Color(0xFFEFF6FF)) // light blue
+                          : (themeProvider.isDarkMode ? const Color(0xFF064E3B) : const Color(0xFFE8F5E9)), // light green
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    const SizedBox(width: 12),
-                    // Reject Button
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () {
-                          _showConfirmationDialog(
-                            context: context,
-                            action: 'reject',
-                            onConfirm: () {
-                              queueProvider.updateSubmissionStatus(item.id, 'REJECTED');
-                              _showStatusMessage(context, 'REJECTED');
-                            },
-                          );
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFFEBEE), // Soft coral
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(
-                                Icons.thumb_down_outlined,
-                                color: Color(0xFFC62828),
-                                size: 14,
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                'Reject',
-                                style: GoogleFonts.inter(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: const Color(0xFFC62828),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
+                    child: Icon(
+                      isPending ? Icons.description_outlined : Icons.check_circle_outline,
+                      color: isPending ? const Color(0xFF3B48F6) : const Color(0xFF2E7D32),
+                      size: 20,
                     ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(width: 12),
+                  // Center Metadata text column
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item.title,
+                          style: GoogleFonts.inter(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF1F2937),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${item.organization} | ${item.senderName} | Submission type: ${isPending ? 'Pending' : 'Approved'}',
+                          style: GoogleFonts.inter(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            color: themeProvider.isDarkMode ? Colors.grey.shade400 : const Color(0xFF6B7280),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            ]
-          ],
-        ),
+            ),
+          ),
+          const SizedBox(width: 8),
+
+          // Chevron indicator opens detailed overlay sheet
+          GestureDetector(
+            onTap: () {
+              _showDocumentDetailsOverlay(context, item, queueProvider);
+            },
+            behavior: HitTestBehavior.opaque,
+            child: const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+              child: Icon(
+                Icons.chevron_right,
+                color: Color(0xFF9CA3AF),
+                size: 18,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -477,17 +491,17 @@ class AdminHomeScreen extends StatelessWidget {
           title: Text(
             isApprove ? 'Confirm Approval' : 'Confirm Rejection',
             style: GoogleFonts.inter(
-              fontWeight: FontWeight.bold, 
-              fontSize: 16, 
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
               color: themeProvider.isDarkMode ? Colors.white : VeriFiColors.textDark,
             ),
           ),
           content: Text(
-            isApprove 
-                ? 'Do you want to approve this submission?' 
+            isApprove
+                ? 'Do you want to approve this submission?'
                 : 'Do you want to reject this submission?',
             style: GoogleFonts.inter(
-              fontSize: 14, 
+              fontSize: 14,
               color: themeProvider.isDarkMode ? Colors.grey.shade300 : VeriFiColors.textGrey,
             ),
           ),
@@ -497,7 +511,7 @@ class AdminHomeScreen extends StatelessWidget {
               child: Text(
                 'Cancel',
                 style: GoogleFonts.inter(
-                  fontWeight: FontWeight.w600, 
+                  fontWeight: FontWeight.w600,
                   color: themeProvider.isDarkMode ? Colors.grey.shade400 : VeriFiColors.textLight,
                 ),
               ),
@@ -529,7 +543,7 @@ class AdminHomeScreen extends StatelessWidget {
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
     showDialog(
       context: context,
-      barrierColor: Colors.black.withValues(alpha: 0.5), // Dim the background
+      barrierColor: Colors.black.withValues(alpha: 0.5),
       builder: (BuildContext context) {
         return Center(
           child: Container(
@@ -554,7 +568,6 @@ class AdminHomeScreen extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Modal Header with Close Button
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -575,8 +588,7 @@ class AdminHomeScreen extends StatelessWidget {
                       ],
                     ),
                     Divider(height: 24, color: themeProvider.isDarkMode ? const Color(0xFF334155) : const Color(0xFFE5E7EB)),
-                    
-                    // Title
+
                     Text(
                       item.title,
                       style: GoogleFonts.inter(
@@ -586,8 +598,7 @@ class AdminHomeScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    
-                    // Metadata list
+
                     _buildModalMetaItem(context, Icons.business_outlined, 'Organization', item.organization),
                     const SizedBox(height: 8),
                     _buildModalMetaItem(context, Icons.calendar_today_outlined, 'Upload Date', _formatFullDate(item.uploadDate)),
@@ -597,7 +608,6 @@ class AdminHomeScreen extends StatelessWidget {
                     _buildModalMetaItem(context, Icons.person_outline, 'Sender', item.senderName),
                     const SizedBox(height: 16),
 
-                    // Description Label
                     Text(
                       'Description',
                       style: GoogleFonts.inter(
@@ -608,12 +618,11 @@ class AdminHomeScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 6),
 
-                    // Description text box with AI flags
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: themeProvider.isDarkMode ? const Color(0xFF0F172A) : const Color(0xFFF4F6FF), // soft blue tint
+                        color: themeProvider.isDarkMode ? const Color(0xFF0F172A) : const Color(0xFFF4F6FF),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(color: themeProvider.isDarkMode ? const Color(0xFF334155) : const Color(0xFFDCE4FF), width: 1),
                       ),
@@ -634,8 +643,8 @@ class AdminHomeScreen extends StatelessWidget {
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                 decoration: BoxDecoration(
-                                  color: item.accuracy >= 90 
-                                      ? const Color(0xFFE8F5E9) 
+                                  color: item.accuracy >= 90
+                                      ? const Color(0xFFE8F5E9)
                                       : const Color(0xFFFFF3E0),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
@@ -644,8 +653,8 @@ class AdminHomeScreen extends StatelessWidget {
                                   style: GoogleFonts.inter(
                                     fontSize: 10,
                                     fontWeight: FontWeight.w700,
-                                    color: item.accuracy >= 90 
-                                        ? const Color(0xFF2E7D32) 
+                                    color: item.accuracy >= 90
+                                        ? const Color(0xFF2E7D32)
                                         : const Color(0xFFE65100),
                                   ),
                                 ),
@@ -661,7 +670,6 @@ class AdminHomeScreen extends StatelessWidget {
                               height: 1.4,
                             ),
                           ),
-                          // Display AI Warning Flags
                           if (item.flags.isNotEmpty) ...[
                             const SizedBox(height: 12),
                             Divider(color: themeProvider.isDarkMode ? const Color(0xFF334155) : const Color(0xFFDCE4FF), thickness: 1),
@@ -721,7 +729,6 @@ class AdminHomeScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 20),
 
-                    // Full-width buttons: Preview & Download
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
@@ -736,7 +743,7 @@ class AdminHomeScreen extends StatelessWidget {
                         icon: const Icon(Icons.visibility_outlined, size: 18),
                         label: const Text('Preview Document'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF3B48F6), // system blue
+                          backgroundColor: const Color(0xFF3B48F6),
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
@@ -770,15 +777,13 @@ class AdminHomeScreen extends StatelessWidget {
                         ),
                       ),
                     ),
-                    
-                    // Final Approve/Reject decisions row
+
                     if (item.status == 'PENDING') ...[
                       const SizedBox(height: 20),
                       const Divider(color: Color(0xFFE5E7EB)),
                       const SizedBox(height: 10),
                       Row(
                         children: [
-                          // Approve Button
                           Expanded(
                             child: GestureDetector(
                               onTap: () {
@@ -817,7 +822,6 @@ class AdminHomeScreen extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(width: 12),
-                          // Reject Button
                           Expanded(
                             child: GestureDetector(
                               onTap: () {
@@ -868,34 +872,30 @@ class AdminHomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildEmptyState(BuildContext context) {
+  Widget _buildEmptyState(BuildContext context, {required bool isPending}) {
     final themeProvider = Provider.of<ThemeProvider>(context);
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: themeProvider.isDarkMode ? const Color(0xFF1E293B) : Colors.grey.shade100,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
               Icons.folder_open,
-              size: 48,
-              color: themeProvider.isDarkMode ? Colors.grey.shade500 : Colors.grey.shade400,
+              size: 40,
+              color: themeProvider.isDarkMode ? Colors.grey.shade600 : Colors.grey.shade400,
             ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'No pending submissions found',
-            style: GoogleFonts.inter(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: themeProvider.isDarkMode ? Colors.grey.shade400 : VeriFiColors.textGrey,
+            const SizedBox(height: 8),
+            Text(
+              isPending ? 'No pending submissions' : 'No recent approvals',
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: themeProvider.isDarkMode ? Colors.grey.shade400 : const Color(0xFF4B5563),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -944,16 +944,16 @@ class AdminHomeScreen extends StatelessWidget {
   }
 
   void _showStatusMessage(BuildContext context, String newStatus) {
-    final String message = newStatus == 'APPROVED' 
-        ? 'Submission approved successfully' 
+    final String message = newStatus == 'APPROVED'
+        ? 'Submission approved successfully'
         : 'Submission rejected';
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
           children: [
             Icon(
-              newStatus == 'APPROVED' ? Icons.check_circle : Icons.cancel, 
+              newStatus == 'APPROVED' ? Icons.check_circle : Icons.cancel,
               color: Colors.white,
             ),
             const SizedBox(width: 8),
@@ -975,10 +975,9 @@ class AdminPlaceholderScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final themeProvider = Provider.of<ThemeProvider>(context);
     return Column(
       children: [
-        _buildHeader(context, themeProvider),
+        _buildHeader(context),
         Expanded(
           child: Container(
             color: const Color(0xFFF8F9FB),
@@ -994,10 +993,12 @@ class AdminPlaceholderScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader(BuildContext context, ThemeProvider themeProvider) {
+  Widget _buildHeader(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
     final user = authProvider.currentUser;
-    final String fullName = user != null ? '${user.firstName} ${user.lastName}' : 'admin admin';
+    final String fullName = (user != null && '${user.firstName} ${user.lastName}'.trim().isNotEmpty && '${user.firstName} ${user.lastName}' != 'admin admin')
+        ? '${user.firstName} ${user.lastName}'
+        : 'luis luis';
 
     return Container(
       width: double.infinity,
@@ -1038,25 +1039,7 @@ class AdminPlaceholderScreen extends StatelessWidget {
           // Controls
           Row(
             children: [
-              // Light/Dark mode toggle
-              Icon(
-                themeProvider.isDarkMode ? Icons.dark_mode : Icons.light_mode,
-                color: Colors.white.withValues(alpha: 0.6),
-                size: 18,
-              ),
-              Switch(
-                value: themeProvider.isDarkMode,
-                onChanged: (val) {
-                  themeProvider.toggleTheme();
-                },
-                activeThumbColor: const Color(0xFF3B48F6),
-                activeTrackColor: Colors.white.withValues(alpha: 0.2),
-                inactiveThumbColor: Colors.white,
-                inactiveTrackColor: Colors.white.withValues(alpha: 0.1),
-                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-              const SizedBox(width: 8),
-              // Notification bell with badge
+              // Notification bell with red numeric badge
               Stack(
                 children: [
                   Container(
@@ -1072,14 +1055,27 @@ class AdminPlaceholderScreen extends StatelessWidget {
                     ),
                   ),
                   Positioned(
-                    right: 4,
-                    top: 4,
+                    right: 0,
+                    top: 0,
                     child: Container(
-                      width: 8,
-                      height: 8,
-                      decoration: const BoxDecoration(
-                        color: Colors.redAccent,
+                      padding: const EdgeInsets.all(2),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEF4444),
                         shape: BoxShape.circle,
+                        border: Border.all(color: const Color(0xFF0F2547), width: 1.5),
+                      ),
+                      constraints: const BoxConstraints(
+                        minWidth: 14,
+                        minHeight: 14,
+                      ),
+                      child: Text(
+                        '3',
+                        style: GoogleFonts.inter(
+                          color: Colors.white,
+                          fontSize: 8,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
                       ),
                     ),
                   ),

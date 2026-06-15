@@ -29,21 +29,136 @@ class _UploadPageState extends State<UploadPage> {
   final _amountController = TextEditingController();
   final _descController = TextEditingController();
   
+  final _amountFocusNode = FocusNode();
+  String? _selectedOrg;
   String? _selectedFileName;
   bool _isSubmitting = false;
 
   @override
   void initState() {
     super.initState();
+    _amountFocusNode.addListener(_onAmountFocusChange);
+    _amountController.addListener(_onAmountChanged);
   }
 
   @override
   void dispose() {
+    _amountFocusNode.removeListener(_onAmountFocusChange);
+    _amountFocusNode.dispose();
+    _amountController.removeListener(_onAmountChanged);
     _orgController.dispose();
     _titleController.dispose();
     _amountController.dispose();
     _descController.dispose();
     super.dispose();
+  }
+
+  void _onAmountFocusChange() {
+    if (_amountFocusNode.hasFocus) {
+      if (_amountController.text.isEmpty) {
+        _amountController.text = '₱ ';
+        _amountController.selection = TextSelection.fromPosition(
+          TextPosition(offset: _amountController.text.length),
+        );
+      }
+    } else {
+      if (_amountController.text.trim() == '₱' || _amountController.text.trim().isEmpty) {
+        _amountController.clear();
+      } else {
+        final cleanText = _amountController.text.replaceAll(RegExp(r'[^\d.]'), '');
+        final doubleValue = double.tryParse(cleanText);
+        if (doubleValue != null) {
+          _amountController.text = '₱ ${doubleValue.toStringAsFixed(2)}';
+        }
+      }
+    }
+  }
+
+  void _onAmountChanged() {
+    final text = _amountController.text;
+    if (_amountFocusNode.hasFocus) {
+      String cleanText = text.replaceAll('₱', '').trim();
+      cleanText = cleanText.replaceAll(RegExp(r'[^\d.]'), '');
+      
+      final parts = cleanText.split('.');
+      if (parts.length > 2) {
+        cleanText = '${parts[0]}.${parts.sublist(1).join('')}';
+      }
+      
+      final newText = '₱ $cleanText';
+      if (text != newText) {
+        _amountController.value = TextEditingValue(
+          text: newText,
+          selection: TextSelection.fromPosition(
+            TextPosition(offset: newText.length),
+          ),
+        );
+      }
+    }
+  }
+
+  String get _titleLabel {
+    if (widget.category == 'Receipt / Invoice') {
+      return 'Associated Event Title *';
+    } else if (widget.category == 'Audit Certificate') {
+      return 'Audit Period / Title *';
+    } else {
+      return 'Proposal Title *';
+    }
+  }
+
+  String get _titleHint {
+    if (widget.category == 'Receipt / Invoice') {
+      return 'e.g. Year-End General Assembly';
+    } else if (widget.category == 'Audit Certificate') {
+      return 'e.g. AY 2025-2026 Year-End';
+    } else {
+      return 'e.g. 2026 Expense Report';
+    }
+  }
+
+  String get _amountLabel {
+    if (widget.category == 'Receipt / Invoice') {
+      return 'Total Amount Spent *';
+    } else if (widget.category == 'Audit Certificate') {
+      return 'Ending Balance *';
+    } else {
+      return 'Proposed Amount *';
+    }
+  }
+
+  String? _validateTitle(String? value) {
+    if (value == null || value.isEmpty) {
+      if (widget.category == 'Receipt / Invoice') {
+        return 'Associated Event Title is required';
+      } else if (widget.category == 'Audit Certificate') {
+        return 'Audit Period / Title is required';
+      } else {
+        return 'Proposal Title is required';
+      }
+    }
+    return null;
+  }
+
+  String? _validateAmount(String? value) {
+    if (value == null || value.isEmpty || value.trim() == '₱') {
+      if (widget.category == 'Receipt / Invoice') {
+        return 'Total Amount Spent is required';
+      } else if (widget.category == 'Audit Certificate') {
+        return 'Ending Balance is required';
+      } else {
+        return 'Proposed Amount is required';
+      }
+    }
+    final cleanText = value.replaceAll(RegExp(r'[^\d.]'), '');
+    if (cleanText.isEmpty) {
+      return 'Please enter a valid number';
+    }
+    final parsed = double.tryParse(cleanText);
+    if (parsed == null || parsed <= 0) {
+      return 'Please enter an amount greater than zero';
+    }
+    return null;
   }
 
   void _simulateFileUpload() {
@@ -97,10 +212,29 @@ class _UploadPageState extends State<UploadPage> {
         return;
       }
 
+      final orgVal = _selectedOrg ?? '';
+      final amountVal = _amountController.text.trim();
+      final userDesc = _descController.text.trim();
+
+      final descriptionBuffer = StringBuffer();
+      descriptionBuffer.writeln(userDesc);
+      descriptionBuffer.writeln();
+      descriptionBuffer.writeln('Organization: $orgVal');
+      
+      if (widget.category == 'Expense Report' || widget.category == 'Budget Proposal') {
+        descriptionBuffer.writeln('Proposed Amount: $amountVal');
+      } else if (widget.category == 'Receipt / Invoice') {
+        descriptionBuffer.writeln('Total Amount Spent: $amountVal');
+      } else if (widget.category == 'Audit Certificate') {
+        descriptionBuffer.writeln('Ending Balance: $amountVal');
+      }
+
+      final payloadDescription = descriptionBuffer.toString().trim();
+
       final success = await docProvider.uploadDocument(
         token: token,
         title: _titleController.text.trim(),
-        description: _descController.text.trim(),
+        description: payloadDescription,
         filePath: _selectedFileName!,
         fileSize: 1024 * 142, // default simulated file size
         fileType: 'application/pdf',
@@ -322,27 +456,39 @@ class _UploadPageState extends State<UploadPage> {
                     const SizedBox(height: 24),
                     
                     // Form fields
-                    CustomTextFormField(
+                    CustomDropdownField<String>(
                       label: 'Organization *',
+                      value: _selectedOrg,
                       hintText: 'e.g. ISITE',
-                      controller: _orgController,
+                      items: const [
+                        DropdownMenuItem(value: 'ACES', child: Text('ACES')),
+                        DropdownMenuItem(value: 'iSITE', child: Text('iSITE')),
+                        DropdownMenuItem(value: 'COSC', child: Text('COSC')),
+                      ],
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedOrg = value;
+                        });
+                      },
                       validator: (value) => value == null || value.isEmpty ? 'Organization is required' : null,
                     ),
                     const SizedBox(height: 20),
                     
                     CustomTextFormField(
-                      label: 'Proposal Title *',
-                      hintText: 'e.g. 2026 Expense Report',
+                      label: _titleLabel,
+                      hintText: _titleHint,
                       controller: _titleController,
-                      validator: (value) => value == null || value.isEmpty ? 'Title is required' : null,
+                      validator: _validateTitle,
                     ),
                     const SizedBox(height: 20),
                     
                     CustomTextFormField(
-                      label: 'Proposed Amount *',
+                      label: _amountLabel,
                       hintText: 'e.g. ISITE',
                       controller: _amountController,
-                      validator: (value) => value == null || value.isEmpty ? 'Amount is required' : null,
+                      focusNode: _amountFocusNode,
+                      inputType: const TextInputType.numberWithOptions(decimal: true),
+                      validator: _validateAmount,
                     ),
                     const SizedBox(height: 20),
                     

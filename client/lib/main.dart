@@ -10,6 +10,8 @@ import 'package:flutter_application_transparatech/core/config/build_config.dart'
 import 'package:flutter_application_transparatech/core/theme/verifi_theme.dart';
 import 'package:flutter_application_transparatech/core/providers/theme_provider.dart';
 import 'package:flutter_application_transparatech/features/admin/presentation/providers/admin_queue_provider.dart';
+import 'package:flutter_application_transparatech/features/admin/presentation/providers/admin_notification_provider.dart';
+import 'package:flutter_application_transparatech/features/dashboard/presentation/providers/student_notification_provider.dart';
 
 void main() {
   // Initialize logger and logging
@@ -23,6 +25,8 @@ void main() {
         ChangeNotifierProvider(create: (_) => DocumentProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => AdminQueueProvider()),
+        ChangeNotifierProvider(create: (_) => AdminNotificationProvider()),
+        ChangeNotifierProvider(create: (_) => StudentNotificationProvider()),
       ],
       child: const MyApp(),
     ),

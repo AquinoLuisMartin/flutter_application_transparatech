@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_application_transparatech/core/theme/verifi_theme.dart';
+import 'package:provider/provider.dart';
+import 'package:flutter_application_transparatech/core/providers/theme_provider.dart';
 
 /// A premium, reusable profile header widget for the VeriFi Design System.
 /// Supports two modes:
@@ -30,6 +32,12 @@ class VeriFiProfileHeader extends StatelessWidget {
   
   /// Callback when notification bell is tapped. If null, notification bell is hidden.
   final VoidCallback? onNotificationTap;
+
+  /// Optional context-aware callback when notification bell is tapped
+  final void Function(BuildContext)? onNotificationTapWithContext;
+
+  /// Optional callback when history icon is tapped
+  final VoidCallback? onHistoryTap;
   
   /// Unread notification count for badge overlay
   final int notificationCount;
@@ -54,6 +62,8 @@ class VeriFiProfileHeader extends StatelessWidget {
     this.isDashboardStyle = true,
     this.greeting,
     this.onNotificationTap,
+    this.onNotificationTapWithContext,
+    this.onHistoryTap,
     this.notificationCount = 0,
     this.bottomContent,
     this.roundedBottom = true,
@@ -72,18 +82,7 @@ class VeriFiProfileHeader extends StatelessWidget {
   }
 
   String _getGreetingText() {
-    final hour = DateTime.now().hour;
-    final String timeGreeting;
-    if (hour < 12) {
-      timeGreeting = 'Good morning';
-    } else if (hour < 17) {
-      timeGreeting = 'Good afternoon';
-    } else {
-      timeGreeting = 'Good evening';
-    }
-    
-    final String greetingLabel = role == 'Student' ? 'Iskolar' : role;
-    return '$timeGreeting, $greetingLabel';
+    return 'Good morning, Iskolar';
   }
 
   @override
@@ -98,8 +97,9 @@ class VeriFiProfileHeader extends StatelessWidget {
   }
 
   Widget _buildDashboardHeader(BuildContext context, String initialsText) {
-    final Color bg = backgroundColor ?? const Color(0xFF132A42);
-    final String finalGreeting = greeting ?? _getGreetingText();
+    final bool isOfficer = role == 'Officer';
+    final Color bg = isOfficer ? const Color(0xFF0F2547) : (backgroundColor ?? const Color(0xFF0F2547));
+    final String finalGreeting = isOfficer ? 'Good morning, Iskolar' : (greeting ?? _getGreetingText());
 
     return Container(
       width: double.infinity,
@@ -116,7 +116,7 @@ class VeriFiProfileHeader extends StatelessWidget {
         top: MediaQuery.of(context).padding.top + 20, 
         left: 24, 
         right: 24, 
-        bottom: roundedBottom ? 32 : 24
+        bottom: bottomContent != null ? 32 : 24,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -133,7 +133,7 @@ class VeriFiProfileHeader extends StatelessWidget {
                       style: GoogleFonts.inter(
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
-                        color: Colors.white.withValues(alpha: 0.7),
+                        color: isOfficer ? const Color(0xFF94A3B8) : Colors.white.withValues(alpha: 0.7),
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -143,7 +143,7 @@ class VeriFiProfileHeader extends StatelessWidget {
                       style: GoogleFonts.inter(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: const Color(0xFFFFFFFF),
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -153,47 +153,72 @@ class VeriFiProfileHeader extends StatelessWidget {
               const SizedBox(width: 16),
               Row(
                 children: [
-                  // Notification bell
-                  if (onNotificationTap != null) ...[
+                  // History button (hidden for Officer in Dashboard Style header)
+                  if (!isOfficer && onHistoryTap != null) ...[
                     GestureDetector(
-                      onTap: onNotificationTap,
-                      child: Stack(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.1),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(Icons.notifications_none, color: Colors.white, size: 22),
-                          ),
-                          if (notificationCount > 0)
-                            Positioned(
-                              right: 0,
-                              top: 0,
-                              child: Container(
-                                padding: const EdgeInsets.all(4),
-                                decoration: const BoxDecoration(
-                                  color: Colors.redAccent,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Text(
-                                  '$notificationCount',
-                                  style: GoogleFonts.inter(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ),
-                            ),
-                        ],
+                      onTap: onHistoryTap,
+                      child: Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.history, color: Colors.white, size: 22),
                       ),
                     ),
                     const SizedBox(width: 12),
                   ],
-                  // User Avatar
-                  _buildAvatarWidget(44, initialsText),
+                  // Notification bell
+                  if (onNotificationTap != null || onNotificationTapWithContext != null) ...[
+                    Builder(
+                      builder: (bellContext) {
+                        return GestureDetector(
+                          onTap: () {
+                            if (onNotificationTapWithContext != null) {
+                              onNotificationTapWithContext!(bellContext);
+                            } else if (onNotificationTap != null) {
+                              onNotificationTap!();
+                            }
+                          },
+                          child: Stack(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: isOfficer ? const Color(0xFF334155) : Colors.white.withValues(alpha: 0.1),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(Icons.notifications_none, color: Colors.white, size: 22),
+                              ),
+                              if (notificationCount > 0)
+                                Positioned(
+                                  right: 0,
+                                  top: 0,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: const BoxDecoration(
+                                      color: Colors.redAccent,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Text(
+                                      '$notificationCount',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                    if (!isOfficer) const SizedBox(width: 12),
+                  ],
+                  // User Avatar (hidden for Officer in Dashboard Style header)
+                  if (!isOfficer) _buildAvatarWidget(44, initialsText),
                 ],
               ),
             ],
@@ -208,6 +233,9 @@ class VeriFiProfileHeader extends StatelessWidget {
   }
 
   Widget _buildProfileHeader(BuildContext context, String initialsText) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final bool isDark = themeProvider.isDarkMode;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -218,7 +246,7 @@ class VeriFiProfileHeader extends StatelessWidget {
           style: GoogleFonts.inter(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: VeriFiColors.textDark,
+            color: isDark ? Colors.white : VeriFiColors.textDark,
           ),
           textAlign: TextAlign.center,
         ),
@@ -228,7 +256,7 @@ class VeriFiProfileHeader extends StatelessWidget {
             subtitle!,
             style: GoogleFonts.inter(
               fontSize: 13,
-              color: VeriFiColors.textGrey,
+              color: isDark ? Colors.grey.shade400 : VeriFiColors.textGrey,
             ),
             textAlign: TextAlign.center,
           ),
@@ -259,6 +287,25 @@ class VeriFiProfileHeader extends StatelessWidget {
   }
 
   Widget _buildAvatarWidget(double size, String initialsText, {bool hasGradientBorder = false}) {
+    if (role == 'Officer' && isDashboardStyle) {
+      return Container(
+        width: size,
+        height: size,
+        decoration: const BoxDecoration(
+          color: Color(0xFF0382BE),
+          shape: BoxShape.circle,
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          'PP',
+          style: GoogleFonts.inter(
+            fontSize: size * 0.35,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+      );
+    }
     final double radius = size / 2;
     
     Widget avatarChild;

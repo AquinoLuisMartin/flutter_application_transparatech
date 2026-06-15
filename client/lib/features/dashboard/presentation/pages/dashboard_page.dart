@@ -10,9 +10,12 @@ import 'package:flutter_application_transparatech/features/document_analysis/dat
 import 'package:flutter_application_transparatech/features/document_analysis/data/models/organization_model.dart';
 import 'notifications_page.dart';
 import 'settings_page.dart';
+import 'activity_history_page.dart';
+import 'package:flutter_application_transparatech/core/providers/theme_provider.dart';
 import 'package:flutter_application_transparatech/features/admin/presentation/pages/admin_dashboard_page.dart';
 import 'package:flutter_application_transparatech/features/auth/presentation/pages/auth_page.dart';
 import 'package:flutter_application_transparatech/features/document_submission/presentation/pages/upload_page.dart';
+import 'package:flutter_application_transparatech/features/dashboard/presentation/widgets/officer_notification_popover.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -24,6 +27,106 @@ class DashboardPage extends StatefulWidget {
 class _DashboardPageState extends State<DashboardPage> {
   int _selectedIndex = 0;
   int? _overrideRoleId; // Developer role override for dashboard UI testing
+
+  bool _isNotificationPopOverOpen = false;
+  OverlayEntry? _officerNotificationOverlayEntry;
+
+  final List<OfficerNotificationItem> _officerNotifications = [
+    OfficerNotificationItem(
+      id: '1',
+      message: 'ACES submitted Q1 2026 Audit Report.',
+      time: '2 mins ago',
+      isRead: false,
+    ),
+    OfficerNotificationItem(
+      id: '2',
+      message: 'iSITE roster updated: Total registered members have grown to 409 users.',
+      time: '2 hours ago',
+      isRead: false,
+    ),
+    OfficerNotificationItem(
+      id: '3',
+      message: "New Organization Request: 'CS Cup Sports Committee' has submitted an application dossier.",
+      time: '5 hours ago',
+      isRead: false,
+    ),
+    OfficerNotificationItem(
+      id: '4',
+      message: 'Access Request: Ellayssa Aguilar requested promotion to Officer for iSITE.',
+      time: '1 day ago',
+      isRead: true,
+    ),
+    OfficerNotificationItem(
+      id: '5',
+      message: 'System Action: Profile record for Princess Dianne Pastrana successfully moved to Activity Logs Archive.',
+      time: '2 days ago',
+      isRead: true,
+    ),
+  ];
+
+  void _showOfficerNotificationPopOver(BuildContext bellContext) {
+    if (_officerNotificationOverlayEntry != null) {
+      _officerNotificationOverlayEntry!.remove();
+      _officerNotificationOverlayEntry = null;
+      setState(() {
+        _isNotificationPopOverOpen = false;
+      });
+      return;
+    }
+
+    final RenderBox renderBox = bellContext.findRenderObject() as RenderBox;
+    final Offset offset = renderBox.localToGlobal(Offset.zero);
+    final Size size = renderBox.size;
+
+    setState(() {
+      _isNotificationPopOverOpen = true;
+    });
+
+    _officerNotificationOverlayEntry = OverlayEntry(
+      builder: (context) {
+        return OfficerNotificationPopOver(
+          triggerOffset: offset,
+          triggerSize: size,
+          notifications: _officerNotifications,
+          onMarkAsRead: (id) {
+            setState(() {
+              final idx = _officerNotifications.indexWhere((n) => n.id == id);
+              if (idx != -1) {
+                _officerNotifications[idx].isRead = true;
+              }
+            });
+          },
+          onMarkAllAsRead: () {
+            setState(() {
+              for (var n in _officerNotifications) {
+                n.isRead = true;
+              }
+            });
+          },
+          onDismiss: () {
+            if (_officerNotificationOverlayEntry != null) {
+              _officerNotificationOverlayEntry!.remove();
+              _officerNotificationOverlayEntry = null;
+              setState(() {
+                _isNotificationPopOverOpen = false;
+              });
+            }
+          },
+        );
+      },
+    );
+
+    Overlay.of(context).insert(_officerNotificationOverlayEntry!);
+  }
+
+  @override
+  void dispose() {
+    if (_officerNotificationOverlayEntry != null) {
+      _officerNotificationOverlayEntry!.remove();
+      _officerNotificationOverlayEntry = null;
+    }
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -37,13 +140,15 @@ class _DashboardPageState extends State<DashboardPage> {
     });
   }
 
-  Widget _buildDocumentCard({
+  Widget _buildDocumentCard(
+    BuildContext context, {
     required String title,
     required String date,
     required String hash,
     bool isNew = false,
     bool showChevron = false,
   }) {
+    final isDark = Provider.of<ThemeProvider>(context).isDarkMode;
     return VeriFiCard(
       icon: const Icon(Icons.description_outlined),
       title: title,
@@ -53,14 +158,18 @@ class _DashboardPageState extends State<DashboardPage> {
         children: [
           Text(
             date,
-            style: VeriFiTypography.label,
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: isDark ? const Color(0xFF94A3B8) : VeriFiColors.textLight,
+            ),
           ),
           if (isNew) ...[
             const SizedBox(width: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: VeriFiColors.secondaryEE,
+                color: isDark ? const Color(0xFF152238) : VeriFiColors.secondaryEE,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
@@ -75,11 +184,12 @@ class _DashboardPageState extends State<DashboardPage> {
           ],
         ],
       ),
-      action: showChevron ? const Icon(Icons.chevron_right, color: VeriFiColors.textLight) : null,
+      action: showChevron ? Icon(Icons.chevron_right, color: isDark ? const Color(0xFF94A3B8) : VeriFiColors.textLight) : null,
     );
   }
 
-  Widget _buildBar(double expensesHeight, double budgetHeight, String label) {
+  Widget _buildBar(BuildContext context, double expensesHeight, double budgetHeight, String label) {
+    final isDark = Provider.of<ThemeProvider>(context).isDarkMode;
     return Column(
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
@@ -92,9 +202,9 @@ class _DashboardPageState extends State<DashboardPage> {
               Container(
                 width: 12,
                 height: 120 * expensesHeight,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF34D399), // Emerald
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+                decoration: const BoxDecoration(
+                  color: Color(0xFF34D399), // Emerald
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(4)),
                 ),
               ),
               const SizedBox(width: 4),
@@ -102,9 +212,9 @@ class _DashboardPageState extends State<DashboardPage> {
               Container(
                 width: 12,
                 height: 120 * budgetHeight,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF60A5FA), // Blue
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+                decoration: const BoxDecoration(
+                  color: Color(0xFF60A5FA), // Blue
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(4)),
                 ),
               ),
             ],
@@ -116,33 +226,57 @@ class _DashboardPageState extends State<DashboardPage> {
           style: GoogleFonts.inter(
             fontSize: 11,
             fontWeight: FontWeight.w500,
-            color: Colors.grey.shade600,
+            color: isDark ? const Color(0xFF94A3B8) : Colors.grey.shade600,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildHeader({bool roundedBottom = true, Widget? bottomContent}) {
+  Widget _buildHeader(BuildContext context, {bool roundedBottom = true, Widget? bottomContent}) {
     final authProvider = Provider.of<AuthProvider>(context);
     final user = authProvider.currentUser;
     final String fullName = user != null ? '${user.firstName} ${user.lastName}' : 'Juan Santos';
     final int activeRoleId = _overrideRoleId ?? user?.roleId ?? 2;
     final String roleName = _getRoleName(activeRoleId);
+    final bool isOfficer = activeRoleId == 3;
 
     return VeriFiProfileHeader(
       name: fullName,
       role: roleName,
       isDashboardStyle: true,
-      onNotificationTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const NotificationsPage(),
-          ),
-        );
-      },
-      notificationCount: 3,
+      onNotificationTap: isOfficer
+          ? null
+          : () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const NotificationsPage(),
+                ),
+              );
+            },
+      onNotificationTapWithContext: isOfficer
+          ? (bellContext) {
+              _showOfficerNotificationPopOver(bellContext);
+            }
+          : null,
+      onHistoryTap: isOfficer
+          ? () {
+              final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (innerContext) => ChangeNotifierProvider<ThemeProvider>.value(
+                    value: themeProvider,
+                    child: const ActivityHistoryPage(),
+                  ),
+                ),
+              );
+            }
+          : null,
+      notificationCount: isOfficer
+          ? _officerNotifications.where((n) => !n.isRead).length
+          : 3,
       avatarUrl: 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(fullName)}&background=0D8ABC&color=fff',
       roundedBottom: roundedBottom,
       bottomContent: bottomContent,
@@ -158,7 +292,7 @@ class _DashboardPageState extends State<DashboardPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Header Section
-          _buildHeader(roundedBottom: true),
+          _buildHeader(context, roundedBottom: true),
 
           // Main Content Area
           Transform.translate(
@@ -273,6 +407,7 @@ class _DashboardPageState extends State<DashboardPage> {
                       ),
                     ] else ...[
                       ...docsList.take(3).map((doc) => _buildDocumentCard(
+                        context,
                         title: doc.documentTitle,
                         date: _formatDate(doc.submissionDate),
                         hash: _getHash(doc),
@@ -355,12 +490,12 @@ class _DashboardPageState extends State<DashboardPage> {
                                   child: Row(
                                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                                     children: [
-                                      _buildBar(0.65, 0.55, 'Oct'),
-                                      _buildBar(0.35, 0.65, 'Nov'),
-                                      _buildBar(0.10, 0.75, 'Dec'),
-                                      _buildBar(0.60, 0.80, 'Jan'),
-                                      _buildBar(0.15, 0.45, 'Feb'),
-                                      _buildBar(0.45, 0.35, 'Mar'),
+                                      _buildBar(context, 0.65, 0.55, 'Oct'),
+                                      _buildBar(context, 0.35, 0.65, 'Nov'),
+                                      _buildBar(context, 0.10, 0.75, 'Dec'),
+                                      _buildBar(context, 0.60, 0.80, 'Jan'),
+                                      _buildBar(context, 0.15, 0.45, 'Feb'),
+                                      _buildBar(context, 0.45, 0.35, 'Mar'),
                                     ],
                                   ),
                                 ),
@@ -620,13 +755,15 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  Widget _buildOfficerDocumentCard({
+  Widget _buildOfficerDocumentCard(
+    BuildContext context, {
     required String title,
     required String date,
     required String hash,
     required String status,
     VoidCallback? onTap,
   }) {
+    final isDark = Provider.of<ThemeProvider>(context).isDarkMode;
     IconData iconData = Icons.receipt_long_outlined;
     Color iconColor;
     Color iconBg;
@@ -655,12 +792,12 @@ class _DashboardPageState extends State<DashboardPage> {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: isDark ? const Color(0xFF152238) : Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.grey.shade100),
+          border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.shade100),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.02),
+              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.02),
               blurRadius: 8,
               offset: const Offset(0, 4),
             ),
@@ -672,7 +809,7 @@ class _DashboardPageState extends State<DashboardPage> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: iconBg,
+                color: isDark ? const Color(0xFF0B192C) : iconBg,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
@@ -691,7 +828,7 @@ class _DashboardPageState extends State<DashboardPage> {
                     style: GoogleFonts.inter(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: const Color(0xFF1F2937),
+                      color: isDark ? Colors.white : const Color(0xFF1F2937),
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -705,7 +842,7 @@ class _DashboardPageState extends State<DashboardPage> {
                         style: GoogleFonts.inter(
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
-                          color: Colors.grey.shade500,
+                          color: isDark ? const Color(0xFF94A3B8) : Colors.grey.shade500,
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -713,7 +850,7 @@ class _DashboardPageState extends State<DashboardPage> {
                         width: 4,
                         height: 4,
                         decoration: BoxDecoration(
-                          color: Colors.grey.shade300,
+                          color: isDark ? const Color(0xFF94A3B8) : Colors.grey.shade300,
                           shape: BoxShape.circle,
                         ),
                       ),
@@ -721,7 +858,7 @@ class _DashboardPageState extends State<DashboardPage> {
                       Icon(
                         Icons.tag,
                         size: 10,
-                        color: Colors.grey.shade400,
+                        color: isDark ? const Color(0xFF94A3B8) : Colors.grey.shade400,
                       ),
                       const SizedBox(width: 2),
                       Expanded(
@@ -730,7 +867,7 @@ class _DashboardPageState extends State<DashboardPage> {
                           style: GoogleFonts.sourceCodePro(
                             fontSize: 11,
                             fontWeight: FontWeight.w500,
-                            color: Colors.grey.shade500,
+                            color: isDark ? const Color(0xFF94A3B8) : Colors.grey.shade500,
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -743,19 +880,21 @@ class _DashboardPageState extends State<DashboardPage> {
             const SizedBox(width: 12),
             VeriFiStatusBadge(status: status),
             const SizedBox(width: 4),
-            Icon(Icons.chevron_right, color: Colors.grey.shade400, size: 20),
+            Icon(Icons.chevron_right, color: isDark ? const Color(0xFF94A3B8) : Colors.grey.shade400, size: 20),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildQuickActionButton({
+  Widget _buildQuickActionButton(
+    BuildContext context, {
     required IconData icon,
     required String label,
     required Color color,
     required VoidCallback onTap,
   }) {
+    final isDark = Provider.of<ThemeProvider>(context).isDarkMode;
     return Expanded(
       child: GestureDetector(
         onTap: onTap,
@@ -763,12 +902,12 @@ class _DashboardPageState extends State<DashboardPage> {
           margin: const EdgeInsets.symmetric(horizontal: 6),
           padding: const EdgeInsets.symmetric(vertical: 18),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: isDark ? const Color(0xFF152238) : Colors.white,
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: Colors.grey.shade100),
+            border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.shade100),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.02),
+                color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.02),
                 blurRadius: 8,
                 offset: const Offset(0, 4),
               ),
@@ -790,7 +929,7 @@ class _DashboardPageState extends State<DashboardPage> {
                 style: GoogleFonts.inter(
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
-                  color: const Color(0xFF4B5563),
+                  color: isDark ? Colors.white : const Color(0xFF4B5563),
                 ),
               ),
             ],
@@ -822,7 +961,8 @@ class _DashboardPageState extends State<DashboardPage> {
     return '${_getMonthName(date.month)} ${date.day}, ${date.year}';
   }
 
-  Widget _buildOfficerHomeTab() {
+  Widget _buildOfficerHomeTab(BuildContext context) {
+    final isDark = Provider.of<ThemeProvider>(context).isDarkMode;
     final authProvider = Provider.of<AuthProvider>(context);
     final user = authProvider.currentUser;
     final String fullName = user != null ? '${user.firstName} ${user.lastName}' : 'Juan Santos';
@@ -847,474 +987,488 @@ class _DashboardPageState extends State<DashboardPage> {
 
     final String orgName = orgBudget?.organization.orgName ?? 'Organization';
 
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          VeriFiProfileHeader(
-            name: fullName,
-            role: 'Officer',
-            isDashboardStyle: true,
-            backgroundColor: const Color(0xFF0F172A),
-            initials: initials,
-            onNotificationTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const NotificationsPage(),
-                ),
-              );
-            },
-            notificationCount: 3,
-            bottomContent: Container(
-              margin: const EdgeInsets.only(top: 8),
-              width: double.infinity,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF3B48F6), Color(0xFF6366F1), Color(0xFF4F46E5)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF3B48F6).withValues(alpha: 0.3),
-                    blurRadius: 20,
-                    offset: const Offset(0, 10),
+    return Container(
+      color: isDark ? const Color(0xFF0B192C) : const Color(0xFFFAFAFA),
+      child: SingleChildScrollView(
+        physics: _isNotificationPopOverOpen
+            ? const NeverScrollableScrollPhysics()
+            : const BouncingScrollPhysics(),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            VeriFiProfileHeader(
+              name: fullName,
+              role: 'Officer',
+              isDashboardStyle: true,
+              backgroundColor: const Color(0xFF0F172A),
+              initials: initials,
+              onNotificationTap: null,
+              onNotificationTapWithContext: (bellContext) {
+                _showOfficerNotificationPopOver(bellContext);
+              },
+              onHistoryTap: null,
+              notificationCount: _officerNotifications.where((n) => !n.isRead).length,
+              bottomContent: Container(
+                margin: const EdgeInsets.only(top: 8),
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF3B48F6), Color(0xFF6366F1), Color(0xFF4F46E5)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-                ],
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF3B48F6).withValues(alpha: 0.3),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
+                ),
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '$orgName Wallet',
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            color: Colors.white.withValues(alpha: 0.8),
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        // Premium Gold Chip
+                        Container(
+                          width: 36,
+                          height: 26,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFD700).withValues(alpha: 0.85),
+                            borderRadius: BorderRadius.circular(6),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.1),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Stack(
+                            children: [
+                              Positioned(
+                                top: 6,
+                                left: 6,
+                                child: Container(
+                                  width: 24,
+                                  height: 14,
+                                  decoration: BoxDecoration(
+                                    border: Border.all(color: Colors.orange.shade700.withValues(alpha: 0.4), width: 0.5),
+                                    borderRadius: BorderRadius.circular(2),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Available Allocation',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        color: Colors.white70,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _formatCurrency(remaining),
+                      style: GoogleFonts.inter(
+                        fontSize: 34,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    // Spent details and progress bar
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Spent: ${_formatCurrency(spent)}',
+                              style: GoogleFonts.inter(
+                                fontSize: 11,
+                                color: Colors.white.withValues(alpha: 0.8),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            Text(
+                              '${(spentPercent * 100).toInt()}%',
+                              style: GoogleFonts.inter(
+                                fontSize: 11,
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: LinearProgressIndicator(
+                            value: spentPercent.clamp(0.0, 1.0),
+                            minHeight: 5,
+                            backgroundColor: Colors.white.withValues(alpha: 0.15),
+                            valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    // Card quick actions row (glassmorphic style)
+                    Row(
+                      children: [
+                        _buildCardAction(Icons.arrow_upward, 'Disburse', () {
+                          _showUploadBottomSheet(context);
+                        }),
+                        const SizedBox(width: 10),
+                        _buildCardAction(Icons.arrow_downward, 'Request', () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Budget request form is being prepared.')),
+                          );
+                        }),
+                        const SizedBox(width: 10),
+                        _buildCardAction(Icons.history, 'History', () {
+                          final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (innerContext) => ChangeNotifierProvider<ThemeProvider>.value(
+                                value: themeProvider,
+                                child: const ActivityHistoryPage(),
+                              ),
+                            ),
+                          );
+                        }),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-              padding: const EdgeInsets.all(24),
+            ),
+
+            // Home Body
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Quick Actions Section
+                  Text(
+                    'Quick Actions',
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white : const Color(0xFF1F2937),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        '$orgName Wallet',
-                        style: GoogleFonts.inter(
-                          fontSize: 12,
-                          color: Colors.white.withValues(alpha: 0.8),
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.5,
-                        ),
+                      _buildQuickActionButton(
+                        context,
+                        icon: Icons.cloud_upload_outlined,
+                        label: 'Upload Doc',
+                        color: const Color(0xFF3B82F6), // Blue
+                        onTap: () => _showUploadBottomSheet(context),
                       ),
-                      // Premium Gold Chip
-                      Container(
-                        width: 36,
-                        height: 26,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFFD700).withValues(alpha: 0.85),
-                          borderRadius: BorderRadius.circular(6),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.1),
-                              blurRadius: 4,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Stack(
-                          children: [
-                            Positioned(
-                              top: 6,
-                              left: 6,
-                              child: Container(
-                                width: 24,
-                                height: 14,
-                                decoration: BoxDecoration(
-                                  border: Border.all(color: Colors.orange.shade700.withValues(alpha: 0.4), width: 0.5),
-                                  borderRadius: BorderRadius.circular(2),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'Available Allocation',
-                    style: GoogleFonts.inter(
-                      fontSize: 12,
-                      color: Colors.white70,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    _formatCurrency(remaining),
-                    style: GoogleFonts.inter(
-                      fontSize: 34,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.white,
-                      letterSpacing: -0.5,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  // Spent details and progress bar
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Spent: ${_formatCurrency(spent)}',
-                            style: GoogleFonts.inter(
-                              fontSize: 11,
-                              color: Colors.white.withValues(alpha: 0.8),
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          Text(
-                            '${(spentPercent * 100).toInt()}%',
-                            style: GoogleFonts.inter(
-                              fontSize: 11,
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(4),
-                        child: LinearProgressIndicator(
-                          value: spentPercent.clamp(0.0, 1.0),
-                          minHeight: 5,
-                          backgroundColor: Colors.white.withValues(alpha: 0.15),
-                          valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  // Card quick actions row (glassmorphic style)
-                  Row(
-                    children: [
-                      _buildCardAction(Icons.arrow_upward, 'Disburse', () {
-                        _showUploadBottomSheet(context);
-                      }),
-                      const SizedBox(width: 10),
-                      _buildCardAction(Icons.arrow_downward, 'Request', () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Budget request form is being prepared.')),
-                        );
-                      }),
-                      const SizedBox(width: 10),
-                      _buildCardAction(Icons.history, 'History', () {
-                        setState(() {
-                          _selectedIndex = 1; // Switch to Documents Tab
-                        });
-                      }),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          // Home Body
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Quick Actions Section
-                Text(
-                  'Quick Actions',
-                  style: GoogleFonts.inter(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFF1F2937),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    _buildQuickActionButton(
-                      icon: Icons.cloud_upload_outlined,
-                      label: 'Upload Doc',
-                      color: const Color(0xFF3B82F6), // Blue
-                      onTap: () => _showUploadBottomSheet(context),
-                    ),
-                    _buildQuickActionButton(
-                      icon: Icons.search_outlined,
-                      label: 'Search',
-                      color: const Color(0xFF8B5CF6), // Purple
-                      onTap: () {
-                        setState(() {
-                          _selectedIndex = 1; // Switch to Documents Tab
-                        });
-                      },
-                    ),
-                    _buildQuickActionButton(
-                      icon: Icons.analytics_outlined,
-                      label: 'Reports',
-                      color: const Color(0xFF10B981), // Green
-                      onTap: () {
-                        setState(() {
-                          _selectedIndex = 2; // Switch to Reports Tab
-                        });
-                      },
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 32),
-
-                // Organization AI Analysis Banner
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.shade50.withValues(alpha: 0.6),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.blue.shade100, width: 1),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(Icons.auto_awesome, color: Colors.blue.shade600, size: 18),
-                          const SizedBox(width: 8),
-                          Text(
-                            '$orgName AI Analysis',
-                            style: GoogleFonts.inter(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.blue.shade800,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        docsList.isEmpty
-                            ? 'No financial records in DB. Please upload a report to initialize AI transparency score.'
-                            : 'All $orgName database documents analyzed. Verified ${docsList.where((d) => d.statusName?.toUpperCase() == "APPROVED").length} approved files. Mismatches details shown in Reports.',
-                        style: GoogleFonts.inter(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.blue.shade900.withValues(alpha: 0.8),
-                          height: 1.45,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      GestureDetector(
+                      _buildQuickActionButton(
+                        context,
+                        icon: Icons.search_outlined,
+                        label: 'Search',
+                        color: const Color(0xFF8B5CF6), // Purple
                         onTap: () {
                           setState(() {
-                            _selectedIndex = 2; // Open reports/analysis
+                            _selectedIndex = 1; // Switch to Documents Tab
                           });
                         },
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              'View Full Report',
-                              style: GoogleFonts.inter(
-                                fontSize: 13,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.blue.shade700,
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            Icon(Icons.arrow_forward, color: Colors.blue.shade700, size: 14),
-                          ],
-                        ),
+                      ),
+                      _buildQuickActionButton(
+                        context,
+                        icon: Icons.analytics_outlined,
+                        label: 'Reports',
+                        color: const Color(0xFF10B981), // Green
+                        onTap: () {
+                          setState(() {
+                            _selectedIndex = 3; // Switch to Reports Tab
+                          });
+                        },
                       ),
                     ],
                   ),
-                ),
-                const SizedBox(height: 32),
+                  const SizedBox(height: 32),
 
-                // Recent Documents Header
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      'Recent Documents',
-                      style: GoogleFonts.inter(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: const Color(0xFF1F2937),
-                      ),
-                    ),
-                    GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _selectedIndex = 1; // Switch to Documents Tab
-                        });
-                      },
-                      child: Text(
-                        'View All',
-                        style: GoogleFonts.inter(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: const Color(0xFF3B48F6),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-
-                // Documents List with Statuses (From DB)
-                if (docsList.isEmpty) ...[
+                  // Organization AI Analysis Banner
                   Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 40),
-                    alignment: Alignment.center,
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF152238) : Colors.blue.shade50.withValues(alpha: 0.6),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.blue.shade100, width: 1),
+                    ),
                     child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(Icons.folder_open_outlined, size: 48, color: Colors.grey.shade300),
+                        Row(
+                          children: [
+                            Icon(Icons.auto_awesome, color: Colors.blue.shade600, size: 18),
+                            const SizedBox(width: 8),
+                            Text(
+                              '$orgName AI Analysis',
+                              style: GoogleFonts.inter(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: isDark ? Colors.white : Colors.blue.shade800,
+                              ),
+                            ),
+                          ],
+                        ),
                         const SizedBox(height: 12),
                         Text(
-                          'No documents in database yet',
+                          docsList.isEmpty
+                              ? 'No financial records in DB. Please upload a report to initialize AI transparency score.'
+                              : 'All $orgName database documents analyzed. Verified ${docsList.where((d) => d.statusName?.toUpperCase() == "APPROVED").length} approved files. Mismatches details shown in Reports.',
                           style: GoogleFonts.inter(
                             fontSize: 13,
-                            color: Colors.grey.shade400,
                             fontWeight: FontWeight.w500,
+                            color: isDark ? const Color(0xFF94A3B8) : Colors.blue.shade900.withValues(alpha: 0.8),
+                            height: 1.45,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _selectedIndex = 3; // Open reports/analysis
+                            });
+                          },
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'View Full Report',
+                                style: GoogleFonts.inter(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                  color: isDark ? const Color(0xFF60A5FA) : Colors.blue.shade700,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Icon(Icons.arrow_forward, color: isDark ? const Color(0xFF60A5FA) : Colors.blue.shade700, size: 14),
+                            ],
                           ),
                         ),
                       ],
                     ),
                   ),
-                ] else ...[
-                  ...docsList.take(4).map((doc) => _buildOfficerDocumentCard(
-                    title: doc.documentTitle,
-                    date: _formatDate(doc.submissionDate),
-                    hash: _getHash(doc),
-                    status: doc.statusName ?? 'PENDING',
-                  )),
-                ],
-                const SizedBox(height: 32),
+                  const SizedBox(height: 32),
 
-                // Data Integrity Status (Redesigned with card border and progress indicators)
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.grey.shade100),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.02),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  // Recent Documents Header
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      Row(
-                        children: [
-                          Icon(Icons.shield_outlined, color: Colors.blue.shade600, size: 20),
-                          const SizedBox(width: 10),
-                          Text(
-                            'Data Integrity Status',
-                            style: GoogleFonts.inter(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: const Color(0xFF1F2937),
-                            ),
-                          ),
-                        ],
+                      Text(
+                        'Recent Documents',
+                        style: GoogleFonts.inter(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? Colors.white : const Color(0xFF1F2937),
+                        ),
                       ),
-                      const SizedBox(height: 20),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      'SHA-256 Verified',
-                                      style: GoogleFonts.inter(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w500,
-                                        color: Colors.grey.shade600,
-                                      ),
-                                    ),
-                                    Text(
-                                      '${(verifiedRatio * 100).toInt()}%',
-                                      style: GoogleFonts.inter(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.blue.shade600,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 8),
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(2),
-                                  child: LinearProgressIndicator(
-                                    value: verifiedRatio.clamp(0.0, 1.0),
-                                    minHeight: 4,
-                                    backgroundColor: Colors.grey.shade100,
-                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.blue.shade600),
-                                  ),
-                                ),
-                              ],
-                            ),
+                      GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _selectedIndex = 1; // Switch to Documents Tab
+                          });
+                        },
+                        child: Text(
+                          'View All',
+                          style: GoogleFonts.inter(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: isDark ? const Color(0xFF60A5FA) : const Color(0xFF3B48F6),
                           ),
-                          const SizedBox(width: 20),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      'Audit Indexed',
-                                      style: GoogleFonts.inter(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w500,
-                                        color: Colors.grey.shade600,
-                                      ),
-                                    ),
-                                    Text(
-                                      '${(indexedRatio * 100).toInt()}%',
-                                      style: GoogleFonts.inter(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.blue.shade600,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 8),
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(2),
-                                  child: LinearProgressIndicator(
-                                    value: indexedRatio.clamp(0.0, 1.0),
-                                    minHeight: 4,
-                                    backgroundColor: Colors.grey.shade100,
-                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.blue.shade600),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
                     ],
                   ),
-                ),
-              ],
+                  const SizedBox(height: 16),
+
+                  // Documents List with Statuses (From DB)
+                  if (docsList.isEmpty) ...[
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 40),
+                      alignment: Alignment.center,
+                      child: Column(
+                        children: [
+                          Icon(Icons.folder_open_outlined, size: 48, color: isDark ? const Color(0xFF94A3B8) : Colors.grey.shade300),
+                          const SizedBox(height: 12),
+                          Text(
+                            'No documents in database yet',
+                            style: GoogleFonts.inter(
+                              fontSize: 13,
+                              color: isDark ? const Color(0xFF94A3B8) : Colors.grey.shade400,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ] else ...[
+                    ...docsList.take(4).map((doc) => _buildOfficerDocumentCard(
+                      context,
+                      title: doc.documentTitle,
+                      date: _formatDate(doc.submissionDate),
+                      hash: _getHash(doc),
+                      status: doc.statusName ?? 'PENDING',
+                    )),
+                  ],
+                  const SizedBox(height: 32),
+
+                  // Data Integrity Status (Redesigned with card border and progress indicators)
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF152238) : Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.shade100),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.02),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.shield_outlined, color: Colors.blue.shade600, size: 20),
+                            const SizedBox(width: 10),
+                            Text(
+                              'Data Integrity Status',
+                              style: GoogleFonts.inter(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: isDark ? Colors.white : const Color(0xFF1F2937),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        'SHA-256 Verified',
+                                        style: GoogleFonts.inter(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w500,
+                                          color: isDark ? const Color(0xFF94A3B8) : Colors.grey.shade600,
+                                        ),
+                                      ),
+                                      Text(
+                                        '${(verifiedRatio * 100).toInt()}%',
+                                        style: GoogleFonts.inter(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                          color: isDark ? const Color(0xFF60A5FA) : Colors.blue.shade600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(2),
+                                    child: LinearProgressIndicator(
+                                      value: verifiedRatio.clamp(0.0, 1.0),
+                                      minHeight: 4,
+                                      backgroundColor: isDark ? const Color(0xFF0B192C) : Colors.grey.shade100,
+                                      valueColor: AlwaysStoppedAnimation<Color>(isDark ? const Color(0xFF60A5FA) : Colors.blue.shade600),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 20),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        'Audit Indexed',
+                                        style: GoogleFonts.inter(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w500,
+                                          color: isDark ? const Color(0xFF94A3B8) : Colors.grey.shade600,
+                                        ),
+                                      ),
+                                      Text(
+                                        '${(indexedRatio * 100).toInt()}%',
+                                        style: GoogleFonts.inter(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                          color: isDark ? const Color(0xFF60A5FA) : Colors.blue.shade600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(2),
+                                    child: LinearProgressIndicator(
+                                      value: indexedRatio.clamp(0.0, 1.0),
+                                      minHeight: 4,
+                                      backgroundColor: isDark ? const Color(0xFF0B192C) : Colors.grey.shade100,
+                                      valueColor: AlwaysStoppedAnimation<Color>(isDark ? const Color(0xFF60A5FA) : Colors.blue.shade600),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -1356,7 +1510,8 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  Widget _buildReportsTab() {
+  Widget _buildReportsTab(BuildContext context) {
+    final isDark = Provider.of<ThemeProvider>(context).isDarkMode;
     final docProvider = Provider.of<DocumentProvider>(context);
     final stats = docProvider.stats;
 
@@ -1364,261 +1519,266 @@ class _DashboardPageState extends State<DashboardPage> {
     final double spent = stats?.budget?.spent ?? 87500.0;
     final double remaining = stats?.budget?.remaining ?? 62500.0;
 
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildHeader(
-            roundedBottom: false,
-            bottomContent: Row(
-              children: [
-                _buildSummaryHeaderCard(Icons.account_balance_wallet_outlined, _formatCurrency(total), 'Total Budget'),
-                const SizedBox(width: 8),
-                _buildSummaryHeaderCard(Icons.receipt_long_outlined, _formatCurrency(spent), 'Total Expenses'),
-                const SizedBox(width: 8),
-                _buildSummaryHeaderCard(Icons.savings_outlined, _formatCurrency(remaining), 'Remaining Funds'),
-              ],
+    return Container(
+      color: isDark ? const Color(0xFF0B192C) : const Color(0xFFFAFAFA),
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildHeader(
+              context,
+              roundedBottom: false,
+              bottomContent: Row(
+                children: [
+                  _buildSummaryHeaderCard(Icons.account_balance_wallet_outlined, _formatCurrency(total), 'Total Budget'),
+                  const SizedBox(width: 8),
+                  _buildSummaryHeaderCard(Icons.receipt_long_outlined, _formatCurrency(spent), 'Total Expenses'),
+                  const SizedBox(width: 8),
+                  _buildSummaryHeaderCard(Icons.savings_outlined, _formatCurrency(remaining), 'Remaining Funds'),
+                ],
+              ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 24.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Transparency Report Button Card
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.grey.shade100),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.02),
-                        blurRadius: 8,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: Colors.blue.shade50,
-                          borderRadius: BorderRadius.circular(10),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 24.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Transparency Report Button Card
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF152238) : Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.shade100),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.02),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
                         ),
-                        child: Icon(Icons.description_outlined, color: Colors.blue.shade600, size: 20),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: isDark ? const Color(0xFF0B192C) : Colors.blue.shade50,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Icon(Icons.description_outlined, color: Colors.blue.shade600, size: 20),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Transparency Report',
+                                style: GoogleFonts.inter(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: isDark ? Colors.white : const Color(0xFF1F2937),
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Latest 6 months',
+                                style: GoogleFonts.inter(
+                                  fontSize: 12,
+                                  color: isDark ? const Color(0xFF94A3B8) : Colors.grey.shade500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: isDark ? const Color(0xFF0B192C) : Colors.grey.shade100,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Icon(Icons.file_download_outlined, color: isDark ? Colors.grey.shade400 : Colors.grey.shade600, size: 20),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+
+                  // Chart Header
+                  Text(
+                    'Budget vs Expenses',
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white : const Color(0xFF1F2937),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Financial flow overtime (Latest 6 months)',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      color: isDark ? const Color(0xFF94A3B8) : Colors.grey.shade500,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Expanded Detailed Chart
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF152238) : Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.shade200),
+                    ),
+                    child: Column(
+                      children: [
+                        SizedBox(
+                          height: 220,
+                          child: Stack(
+                            children: [
+                              Column(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: List.generate(8, (index) {
+                                  final labels = ['300k', '200k', '100k', '80k', '60k', '40k', '20k', '0'];
+                                  return Row(
+                                    children: [
+                                      SizedBox(
+                                        width: 30,
+                                        child: Text(
+                                          labels[index],
+                                          style: GoogleFonts.inter(
+                                            fontSize: 10,
+                                            color: isDark ? const Color(0xFF94A3B8) : Colors.grey.shade400,
+                                          ),
+                                        ),
+                                      ),
+                                      Expanded(
+                                        child: Container(
+                                          height: 1,
+                                          color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.shade100,
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                }),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.only(left: 40.0),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                  children: [
+                                    _buildBar(context, 0.65, 0.55, 'Oct'),
+                                    _buildBar(context, 0.35, 0.65, 'Nov'),
+                                    _buildBar(context, 0.10, 0.75, 'Dec'),
+                                    _buildBar(context, 0.60, 0.80, 'Jan'),
+                                    _buildBar(context, 0.15, 0.45, 'Feb'),
+                                    _buildBar(context, 0.45, 0.35, 'Mar'),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(width: 8, height: 8, color: const Color(0xFF34D399)),
+                            const SizedBox(width: 6),
+                            Text('Expenses', style: GoogleFonts.inter(fontSize: 12, color: isDark ? const Color(0xFF94A3B8) : Colors.grey.shade700)),
+                            const SizedBox(width: 24),
+                            Container(width: 8, height: 8, color: const Color(0xFF60A5FA)),
+                            const SizedBox(width: 6),
+                            Text('Budget', style: GoogleFonts.inter(fontSize: 12, color: isDark ? const Color(0xFF94A3B8) : Colors.grey.shade700)),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+
+                  // Expense Breakdown
+                  Text(
+                    'Expense Breakdown',
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white : const Color(0xFF1F2937),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Where the money goes',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      color: isDark ? const Color(0xFF94A3B8) : Colors.grey.shade500,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF152238) : Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.shade200),
+                    ),
+                    child: Column(
+                      children: [
+                        _buildExpenseRow(context, 'Tanglaw', '31.5% of total', 'P27,562', const Color(0xFF3B82F6), 0.7),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          child: Divider(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.shade100, height: 1),
+                        ),
+                        _buildExpenseRow(context, 'Foundation Week', '25.3% of total', 'P22,137', const Color(0xFF8B5CF6), 0.5),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          child: Divider(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.shade100, height: 1),
+                        ),
+                        _buildExpenseRow(context, 'IT Days', '16.2% of total', 'P14,175', const Color(0xFF06B6D4), 0.3),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          child: Divider(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.shade100, height: 1),
+                        ),
+                        _buildExpenseRow(context, 'IT Night', '27% of total', 'P23,625', const Color(0xFF10B981), 0.6),
+                        const SizedBox(height: 24),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              'Transparency Report',
+                              'Total Expenses',
                               style: GoogleFonts.inter(
                                 fontSize: 14,
                                 fontWeight: FontWeight.bold,
-                                color: const Color(0xFF1F2937),
+                                color: isDark ? Colors.white : const Color(0xFF1F2937),
                               ),
                             ),
-                            const SizedBox(height: 2),
                             Text(
-                              'Latest 6 months',
+                              'P87,500',
                               style: GoogleFonts.inter(
-                                fontSize: 12,
-                                color: Colors.grey.shade500,
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: isDark ? Colors.white : const Color(0xFF1F2937),
                               ),
                             ),
                           ],
                         ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade100,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Icon(Icons.file_download_outlined, color: Colors.grey.shade600, size: 20),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(height: 32),
-
-                // Chart Header
-                Text(
-                  'Budget vs Expenses',
-                  style: GoogleFonts.inter(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFF1F2937),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Financial flow overtime (Latest 6 months)',
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    color: Colors.grey.shade500,
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Expanded Detailed Chart
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.grey.shade200),
-                  ),
-                  child: Column(
-                    children: [
-                      SizedBox(
-                        height: 220,
-                        child: Stack(
-                          children: [
-                            Column(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: List.generate(8, (index) {
-                                final labels = ['300k', '200k', '100k', '80k', '60k', '40k', '20k', '0'];
-                                return Row(
-                                  children: [
-                                    SizedBox(
-                                      width: 30,
-                                      child: Text(
-                                        labels[index],
-                                        style: GoogleFonts.inter(
-                                          fontSize: 10,
-                                          color: Colors.grey.shade400,
-                                        ),
-                                      ),
-                                    ),
-                                    Expanded(
-                                      child: Container(
-                                        height: 1,
-                                        color: Colors.grey.shade100,
-                                      ),
-                                    ),
-                                  ],
-                                );
-                              }),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.only(left: 40.0),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                                children: [
-                                  _buildBar(0.65, 0.55, 'Oct'),
-                                  _buildBar(0.35, 0.65, 'Nov'),
-                                  _buildBar(0.10, 0.75, 'Dec'),
-                                  _buildBar(0.60, 0.80, 'Jan'),
-                                  _buildBar(0.15, 0.45, 'Feb'),
-                                  _buildBar(0.45, 0.35, 'Mar'),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(width: 8, height: 8, color: const Color(0xFF34D399)),
-                          const SizedBox(width: 6),
-                          Text('Expenses', style: GoogleFonts.inter(fontSize: 12, color: Colors.grey.shade700)),
-                          const SizedBox(width: 24),
-                          Container(width: 8, height: 8, color: const Color(0xFF60A5FA)),
-                          const SizedBox(width: 6),
-                          Text('Budget', style: GoogleFonts.inter(fontSize: 12, color: Colors.grey.shade700)),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 32),
-
-                // Expense Breakdown
-                Text(
-                  'Expense Breakdown',
-                  style: GoogleFonts.inter(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFF1F2937),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Where the money goes',
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    color: Colors.grey.shade500,
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.grey.shade200),
-                  ),
-                  child: Column(
-                    children: [
-                      _buildExpenseRow('Tanglaw', '31.5% of total', 'P27,562', const Color(0xFF3B82F6), 0.7),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        child: Divider(color: Colors.grey.shade100, height: 1),
-                      ),
-                      _buildExpenseRow('Foundation Week', '25.3% of total', 'P22,137', const Color(0xFF8B5CF6), 0.5),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        child: Divider(color: Colors.grey.shade100, height: 1),
-                      ),
-                      _buildExpenseRow('IT Days', '16.2% of total', 'P14,175', const Color(0xFF06B6D4), 0.3),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        child: Divider(color: Colors.grey.shade100, height: 1),
-                      ),
-                      _buildExpenseRow('IT Night', '27% of total', 'P23,625', const Color(0xFF10B981), 0.6),
-                      const SizedBox(height: 24),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Total Expenses',
-                            style: GoogleFonts.inter(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: const Color(0xFF1F2937),
-                            ),
-                          ),
-                          Text(
-                            'P87,500',
-                            style: GoogleFonts.inter(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: const Color(0xFF1F2937),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildExpenseRow(String title, String subtitle, String amount, Color color, double progress) {
+  Widget _buildExpenseRow(BuildContext context, String title, String subtitle, String amount, Color color, double progress) {
+    final isDark = Provider.of<ThemeProvider>(context).isDarkMode;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1649,14 +1809,14 @@ class _DashboardPageState extends State<DashboardPage> {
                     style: GoogleFonts.inter(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: const Color(0xFF1F2937),
+                      color: isDark ? Colors.white : const Color(0xFF1F2937),
                     ),
                   ),
                   Text(
                     subtitle,
                     style: GoogleFonts.inter(
                       fontSize: 11,
-                      color: Colors.grey.shade500,
+                      color: isDark ? const Color(0xFF94A3B8) : Colors.grey.shade500,
                     ),
                   ),
                 ],
@@ -1667,7 +1827,7 @@ class _DashboardPageState extends State<DashboardPage> {
               style: GoogleFonts.inter(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
-                color: const Color(0xFF1F2937),
+                color: isDark ? Colors.white : const Color(0xFF1F2937),
               ),
             ),
           ],
@@ -1679,7 +1839,7 @@ class _DashboardPageState extends State<DashboardPage> {
               height: 4,
               width: double.infinity,
               decoration: BoxDecoration(
-                color: Colors.grey.shade100,
+                color: isDark ? const Color(0xFF0B192C) : Colors.grey.shade100,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -1699,7 +1859,8 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  Widget _buildDocumentsTab() {
+  Widget _buildDocumentsTab(BuildContext context) {
+    final isDark = Provider.of<ThemeProvider>(context).isDarkMode;
     final docProvider = Provider.of<DocumentProvider>(context);
     final docsList = docProvider.documents;
 
@@ -1707,62 +1868,66 @@ class _DashboardPageState extends State<DashboardPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Header Section without rounded border
-        _buildHeader(roundedBottom: false),
+        _buildHeader(context, roundedBottom: false),
 
         // Rest of body
         Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 24.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                VeriFiSearchComponent(
-                  hintText: 'Search',
-                  onFilterPressed: () {},
-                ),
-                const SizedBox(height: 32),
-
-                // Title
-                Text(
-                  'All Documents',
-                  style: GoogleFonts.inter(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFF1F2937),
+          child: Container(
+            color: isDark ? const Color(0xFF0B192C) : const Color(0xFFFAFAFA),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 24.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  VeriFiSearchComponent(
+                    hintText: 'Search',
+                    onFilterPressed: () {},
                   ),
-                ),
-                const SizedBox(height: 16),
+                  const SizedBox(height: 32),
 
-                // Documents List
-                if (docsList.isEmpty) ...[
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 40),
-                    alignment: Alignment.center,
-                    child: Column(
-                      children: [
-                        Icon(Icons.folder_open_outlined, size: 48, color: Colors.grey.shade300),
-                        const SizedBox(height: 12),
-                        Text(
-                          'No documents in database yet',
-                          style: GoogleFonts.inter(
-                            fontSize: 13,
-                            color: Colors.grey.shade400,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
+                  // Title
+                  Text(
+                    'All Documents',
+                    style: GoogleFonts.inter(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white : const Color(0xFF1F2937),
                     ),
                   ),
-                ] else ...[
-                  ...docsList.map((doc) => _buildDocumentCard(
-                    title: doc.documentTitle,
-                    date: _formatDate(doc.submissionDate),
-                    hash: _getHash(doc),
-                    showChevron: true,
-                  )),
+                  const SizedBox(height: 16),
+
+                  // Documents List
+                  if (docsList.isEmpty) ...[
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 40),
+                      alignment: Alignment.center,
+                      child: Column(
+                        children: [
+                          Icon(Icons.folder_open_outlined, size: 48, color: isDark ? const Color(0xFF94A3B8) : Colors.grey.shade300),
+                          const SizedBox(height: 12),
+                          Text(
+                            'No documents in database yet',
+                            style: GoogleFonts.inter(
+                              fontSize: 13,
+                              color: isDark ? const Color(0xFF94A3B8) : Colors.grey.shade400,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ] else ...[
+                    ...docsList.map((doc) => _buildDocumentCard(
+                      context,
+                      title: doc.documentTitle,
+                      date: _formatDate(doc.submissionDate),
+                      hash: _getHash(doc),
+                      showChevron: true,
+                    )),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
         ),
@@ -1770,23 +1935,25 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  Widget _buildAnnouncementCard({
+  Widget _buildAnnouncementCard(
+    BuildContext context, {
     required String title,
     required String body,
     required String date,
     required String time,
     bool isPinned = false,
   }) {
+    final isDark = Provider.of<ThemeProvider>(context).isDarkMode;
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF152238) : Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade100),
+        border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.shade100),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.02),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -1798,7 +1965,7 @@ class _DashboardPageState extends State<DashboardPage> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.blue.shade50,
+              color: isDark ? const Color(0xFF0B192C) : Colors.blue.shade50,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
@@ -1821,7 +1988,7 @@ class _DashboardPageState extends State<DashboardPage> {
                         style: GoogleFonts.inter(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
-                          color: const Color(0xFF1F2937),
+                          color: isDark ? Colors.white : const Color(0xFF1F2937),
                         ),
                       ),
                     ),
@@ -1836,7 +2003,7 @@ class _DashboardPageState extends State<DashboardPage> {
                   body,
                   style: GoogleFonts.inter(
                     fontSize: 12,
-                    color: Colors.grey.shade500,
+                    color: isDark ? const Color(0xFF94A3B8) : Colors.grey.shade500,
                     height: 1.5,
                   ),
                 ),
@@ -1847,7 +2014,7 @@ class _DashboardPageState extends State<DashboardPage> {
                     Icon(
                       Icons.calendar_today_outlined,
                       size: 13,
-                      color: Colors.grey.shade400,
+                      color: isDark ? const Color(0xFF94A3B8) : Colors.grey.shade400,
                     ),
                     const SizedBox(width: 6),
                     Text(
@@ -1855,7 +2022,7 @@ class _DashboardPageState extends State<DashboardPage> {
                       style: GoogleFonts.inter(
                         fontSize: 11,
                         fontWeight: FontWeight.w500,
-                        color: Colors.grey.shade400,
+                        color: isDark ? const Color(0xFF94A3B8) : Colors.grey.shade400,
                       ),
                     ),
                   ],
@@ -1868,90 +2035,99 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  Widget _buildAnnouncementsTab() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildHeader(roundedBottom: false),
-        Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 24.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                VeriFiSearchComponent(
-                  hintText: 'Search',
-                  onFilterPressed: () {},
-                ),
-                const SizedBox(height: 32),
-
-                // Pinned Section
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.push_pin_outlined, size: 18, color: Color(0xFF1F2937)),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Pinned',
-                      style: GoogleFonts.inter(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: const Color(0xFF1F2937),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                
-                _buildAnnouncementCard(
-                  title: 'COSC Society Q4 2025 Expense Report',
-                  body: 'All Q4 2025 COSC Society financial documents analyzed. 94.5% data extraction accuracy achieved. 1 sponsorship agreement flagged for hash mismatch - manual review recommended.',
-                  date: 'March 15, 2026',
-                  time: '11:59 PM',
-                  isPinned: true,
-                ),
-                _buildAnnouncementCard(
-                  title: 'New Document Submission Deadline',
-                  body: 'All organizations must submit Q1 2026 financial reports by April 15, 2026. Late submissions may affect compliance scores.',
-                  date: 'March 15, 2026',
-                  time: '11:59 PM',
-                  isPinned: true,
-                ),
-
-                const SizedBox(height: 24),
-
-                // All Announcements Section
-                Text(
-                  'All Announcements',
-                  style: GoogleFonts.inter(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFF1F2937),
+  Widget _buildAnnouncementsTab(BuildContext context) {
+    final isDark = Provider.of<ThemeProvider>(context).isDarkMode;
+    return Container(
+      color: isDark ? const Color(0xFF0B192C) : const Color(0xFFFAFAFA),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildHeader(context, roundedBottom: false),
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 24.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  VeriFiSearchComponent(
+                    hintText: 'Search',
+                    onFilterPressed: () {},
                   ),
-                ),
-                const SizedBox(height: 16),
+                  const SizedBox(height: 32),
 
-                _buildAnnouncementCard(
-                  title: 'COSC Society Q4 2025 Expense Report',
-                  body: 'All Q4 2025 COSC Society financial documents analyzed. 94.5% data extraction accuracy achieved. 1 sponsorship agreement flagged for hash mismatch - manual review recommended.',
-                  date: 'March 15, 2026',
-                  time: '11:59 PM',
-                ),
-                _buildAnnouncementCard(
-                  title: 'New Document Submission Deadline',
-                  body: 'All organizations must submit Q1 2026 financial reports by April 15, 2026. Late submissions may affect compliance scores.',
-                  date: 'March 15, 2026',
-                  time: '11:59 PM',
-                ),
-              ],
+                  // Pinned Section
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Icon(Icons.push_pin_outlined, size: 18, color: isDark ? Colors.white : const Color(0xFF1F2937)),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Pinned',
+                        style: GoogleFonts.inter(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? Colors.white : const Color(0xFF1F2937),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  _buildAnnouncementCard(
+                    context,
+                    title: 'COSC Society Q4 2025 Expense Report',
+                    body: 'All Q4 2025 COSC Society financial documents analyzed. 94.5% data extraction accuracy achieved. 1 sponsorship agreement flagged for hash mismatch - manual review recommended.',
+                    date: 'March 15, 2026',
+                    time: '11:59 PM',
+                    isPinned: true,
+                  ),
+                  _buildAnnouncementCard(
+                    context,
+                    title: 'New Document Submission Deadline',
+                    body: 'All organizations must submit Q1 2026 financial reports by April 15, 2026. Late submissions may affect compliance scores.',
+                    date: 'March 15, 2026',
+                    time: '11:59 PM',
+                    isPinned: true,
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // All Announcements Section
+                  Text(
+                    'All Announcements',
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white : const Color(0xFF1F2937),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  _buildAnnouncementCard(
+                    context,
+                    title: 'COSC Society Q4 2025 Expense Report',
+                    body: 'All Q4 2025 COSC Society financial documents analyzed. 94.5% data extraction accuracy achieved. 1 sponsorship agreement flagged for hash mismatch - manual review recommended.',
+                    date: 'March 15, 2026',
+                    time: '11:59 PM',
+                  ),
+                  _buildAnnouncementCard(
+                    context,
+                    title: 'New Document Submission Deadline',
+                    body: 'All organizations must submit Q1 2026 financial reports by April 15, 2026. Late submissions may affect compliance scores.',
+                    date: 'March 15, 2026',
+                    time: '11:59 PM',
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
-  Widget _buildInfoRow(String label, String value) {
+  Widget _buildInfoRow(BuildContext context, String label, String value) {
+    final isDark = Provider.of<ThemeProvider>(context).isDarkMode;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 16.0),
       child: Row(
@@ -1961,7 +2137,7 @@ class _DashboardPageState extends State<DashboardPage> {
             label,
             style: GoogleFonts.inter(
               fontSize: 13,
-              color: Colors.grey.shade500,
+              color: isDark ? const Color(0xFF94A3B8) : Colors.grey.shade500,
             ),
           ),
           Text(
@@ -1969,7 +2145,7 @@ class _DashboardPageState extends State<DashboardPage> {
             style: GoogleFonts.inter(
               fontSize: 13,
               fontWeight: FontWeight.bold,
-              color: const Color(0xFF1F2937),
+              color: isDark ? Colors.white : const Color(0xFF1F2937),
             ),
           ),
         ],
@@ -1977,17 +2153,19 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  Widget _buildActionRow(IconData icon, String title, Color color, {bool isDestructive = false}) {
+  Widget _buildActionRow(BuildContext context, IconData icon, String title, Color color, {bool isDestructive = false}) {
+    final isDark = Provider.of<ThemeProvider>(context).isDarkMode;
+    final Color itemColor = isDestructive ? color : (isDark ? Colors.white : color);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF152238) : Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isDestructive ? Colors.red.shade100 : Colors.grey.shade200),
+        border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.05) : isDestructive ? Colors.red.shade100 : Colors.grey.shade200),
       ),
       child: Row(
         children: [
-          Icon(icon, color: color, size: 20),
+          Icon(icon, color: itemColor, size: 20),
           const SizedBox(width: 16),
           Expanded(
             child: Text(
@@ -1995,17 +2173,18 @@ class _DashboardPageState extends State<DashboardPage> {
               style: GoogleFonts.inter(
                 fontSize: 14,
                 fontWeight: isDestructive ? FontWeight.bold : FontWeight.w600,
-                color: color,
+                color: itemColor,
               ),
             ),
           ),
-          Icon(Icons.chevron_right, color: isDestructive ? Colors.red.shade300 : Colors.grey.shade400, size: 20),
+          Icon(Icons.chevron_right, color: isDestructive ? Colors.red.shade300 : (isDark ? const Color(0xFF94A3B8) : Colors.grey.shade400), size: 20),
         ],
       ),
     );
   }
 
-  Widget _buildProfileTab() {
+  Widget _buildProfileTab(BuildContext context) {
+    final isDark = Provider.of<ThemeProvider>(context).isDarkMode;
     final authProvider = Provider.of<AuthProvider>(context);
     final user = authProvider.currentUser;
     final String fullName = user != null ? '${user.firstName} ${user.lastName}' : 'Juan Dela Cruz Santos';
@@ -2023,151 +2202,160 @@ class _DashboardPageState extends State<DashboardPage> {
     final orgBudget = docProvider.organizationBudget;
     final String orgName = orgBudget?.organization.orgName ?? (isOfficer ? 'COSC Society' : 'ISITE');
 
-    return Column(
-      children: [
-        _buildHeader(roundedBottom: false),
-        Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                VeriFiProfileHeader(
-                  name: fullName,
-                  role: roleName,
-                  subtitle: email,
-                  initials: initials,
-                  isDashboardStyle: false,
-                ),
-                const SizedBox(height: 32),
+    return Container(
+      color: isDark ? const Color(0xFF0B192C) : const Color(0xFFFAFAFA),
+      child: Column(
+        children: [
+          _buildHeader(context, roundedBottom: false),
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  VeriFiProfileHeader(
+                    name: fullName,
+                    role: roleName,
+                    subtitle: email,
+                    initials: initials,
+                    isDashboardStyle: false,
+                  ),
+                  const SizedBox(height: 32),
 
-                // Info Card
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.grey.shade200),
+                  // Info Card
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF152238) : Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.shade200),
+                    ),
+                    child: Column(
+                      children: [
+                        _buildInfoRow(context, roleName == 'Admin' ? 'Faculty ID' : 'Student ID', user?.studentId ?? '2023-00001-SM-0'),
+                        Divider(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.shade100, height: 1),
+                        _buildInfoRow(context, 'Organization', orgName),
+                        Divider(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.shade100, height: 1),
+                        _buildInfoRow(context, 'Campus', 'PUP Sta. Maria, Bulacan'),
+                        Divider(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.shade100, height: 1),
+                        _buildInfoRow(context, 'Role', roleName),
+                        Divider(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.shade100, height: 1),
+                        _buildInfoRow(context, 'Member Since', user != null ? '${_getMonthName(user.createdAt.month)} ${user.createdAt.year}' : 'September 2023'),
+                      ],
+                    ),
                   ),
-                  child: Column(
-                    children: [
-                      _buildInfoRow(roleName == 'Admin' ? 'Faculty ID' : 'Student ID', user?.studentId ?? '2023-00001-SM-0'),
-                      Divider(color: Colors.grey.shade100, height: 1),
-                      _buildInfoRow('Organization', orgName),
-                      Divider(color: Colors.grey.shade100, height: 1),
-                      _buildInfoRow('Campus', 'PUP Sta. Maria, Bulacan'),
-                      Divider(color: Colors.grey.shade100, height: 1),
-                      _buildInfoRow('Role', roleName),
-                      Divider(color: Colors.grey.shade100, height: 1),
-                      _buildInfoRow('Member Since', user != null ? '${_getMonthName(user.createdAt.month)} ${user.createdAt.year}' : 'September 2023'),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
+                  const SizedBox(height: 24),
 
-                // Developer Switcher
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.amber.shade50,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.amber.shade200),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(Icons.bug_report_outlined, color: Colors.amber.shade800),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Developer Tools',
-                            style: GoogleFonts.inter(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.amber.shade900,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Override dashboard role layout for presentation and verification purposes:',
-                        style: GoogleFonts.inter(
-                          fontSize: 12,
-                          color: Colors.amber.shade800,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                            child: Text(
-                              'Active UI: ${activeRoleId == 1 ? "Admin (System)" : isOfficer ? "Officer (E-Wallet)" : "Student (Standard)"}',
+                  // Developer Switcher
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF152238) : Colors.amber.shade50,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.amber.shade200),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.bug_report_outlined, color: isDark ? Colors.amber : Colors.amber.shade800),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Developer Tools',
                               style: GoogleFonts.inter(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.amber.shade900,
+                                fontWeight: FontWeight.bold,
+                                color: isDark ? Colors.amber : Colors.amber.shade900,
+                                fontSize: 14,
                               ),
                             ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Override dashboard role layout for presentation and verification purposes:',
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            color: isDark ? const Color(0xFF94A3B8) : Colors.amber.shade800,
                           ),
-                          ElevatedButton(
-                            onPressed: () {
-                              setState(() {
-                                if (activeRoleId == 2) {
-                                  _overrideRoleId = 3; // Switch to Officer
-                                } else if (activeRoleId == 3) {
-                                  _overrideRoleId = 1; // Switch to Admin
-                                } else {
-                                  _overrideRoleId = 2; // Switch to Student
-                                }
-                                _selectedIndex = 0; // Reset index to Home
-                              });
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.amber.shade800,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                              textStyle: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold),
-                              elevation: 0,
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                'Active UI: ${activeRoleId == 1 ? "Admin (System)" : isOfficer ? "Officer (E-Wallet)" : "Student (Standard)"}',
+                                style: GoogleFonts.inter(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: isDark ? Colors.white : Colors.amber.shade900,
+                                ),
+                              ),
                             ),
-                            child: const Text('Toggle Role UI'),
-                          ),
-                        ],
-                      ),
-                    ],
+                            ElevatedButton(
+                              onPressed: () {
+                                setState(() {
+                                  if (activeRoleId == 2) {
+                                    _overrideRoleId = 3; // Switch to Officer
+                                  } else if (activeRoleId == 3) {
+                                    _overrideRoleId = 1; // Switch to Admin
+                                  } else {
+                                    _overrideRoleId = 2; // Switch to Student
+                                  }
+                                  _selectedIndex = 0; // Reset index to Home
+                                });
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: isDark ? const Color(0xFF0B192C) : Colors.amber.shade800,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                textStyle: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold),
+                                elevation: 0,
+                              ),
+                              child: const Text('Toggle Role UI'),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(height: 24),
+                  const SizedBox(height: 24),
 
-                // Action Buttons
-                GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const SettingsPage()),
-                    );
-                  },
-                  child: _buildActionRow(Icons.settings_outlined, 'Account Settings', const Color(0xFF1F2937)),
-                ),
-                const SizedBox(height: 16),
-                GestureDetector(
-                  onTap: () {
-                    Provider.of<AuthProvider>(context, listen: false).signOut();
-                    Navigator.pushAndRemoveUntil(
-                      context,
-                      MaterialPageRoute(builder: (context) => const AuthPage()),
-                      (route) => false,
-                    );
-                  },
-                  child: _buildActionRow(Icons.logout, 'Log Out', Colors.redAccent, isDestructive: true),
-                ),
-              ],
+                  // Action Buttons
+                  GestureDetector(
+                    onTap: () {
+                      final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (innerContext) => ChangeNotifierProvider<ThemeProvider>.value(
+                            value: themeProvider,
+                            child: const SettingsPage(),
+                          ),
+                        ),
+                      );
+                    },
+                    child: _buildActionRow(context, Icons.settings_outlined, 'Account Settings', const Color(0xFF1F2937)),
+                  ),
+                  const SizedBox(height: 16),
+                  GestureDetector(
+                    onTap: () {
+                      Provider.of<AuthProvider>(context, listen: false).signOut();
+                      Navigator.pushAndRemoveUntil(
+                        context,
+                        MaterialPageRoute(builder: (context) => const AuthPage()),
+                        (route) => false,
+                      );
+                    },
+                    child: _buildActionRow(context, Icons.logout, 'Log Out', Colors.redAccent, isDestructive: true),
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -2183,65 +2371,121 @@ class _DashboardPageState extends State<DashboardPage> {
 
     final bool isOfficer = activeRoleId == 3;
 
-    Widget activeBody;
     if (isOfficer) {
-      switch (_selectedIndex) {
-        case 0:
-          activeBody = _buildOfficerHomeTab();
-          break;
-        case 1:
-          activeBody = _buildDocumentsTab();
-          break;
-        case 3:
-          activeBody = _buildReportsTab();
-          break;
-        case 4:
-          activeBody = _buildProfileTab();
-          break;
-        default:
-          activeBody = _buildOfficerHomeTab();
-      }
-    } else {
-      switch (_selectedIndex) {
-        case 0:
-          activeBody = _buildHomeTab();
-          break;
-        case 1:
-          activeBody = _buildDocumentsTab();
-          break;
-        case 2:
-          activeBody = _buildReportsTab();
-          break;
-        case 3:
-          activeBody = _buildAnnouncementsTab();
-          break;
-        case 4:
-          activeBody = _buildProfileTab();
-          break;
-        default:
-          activeBody = _buildHomeTab();
-      }
+      return ChangeNotifierProvider<ThemeProvider>(
+        create: (_) => OfficerThemeProvider(),
+        child: Builder(
+          builder: (context) {
+            final themeProvider = Provider.of<ThemeProvider>(context);
+            final bool isDark = themeProvider.isDarkMode;
+
+            Widget activeBody;
+            switch (_selectedIndex) {
+              case 0:
+                activeBody = _buildOfficerHomeTab(context);
+                break;
+              case 1:
+                activeBody = _buildDocumentsTab(context);
+                break;
+              case 3:
+                activeBody = _buildReportsTab(context);
+                break;
+              case 4:
+                activeBody = _buildProfileTab(context);
+                break;
+              default:
+                activeBody = _buildOfficerHomeTab(context);
+            }
+
+            return Scaffold(
+              backgroundColor: isDark ? const Color(0xFF0B192C) : const Color(0xFFFAFAFA),
+              floatingActionButton: FloatingActionButton(
+                onPressed: () => _showUploadBottomSheet(context),
+                backgroundColor: const Color(0xFF3B48F6),
+                elevation: 4,
+                shape: const CircleBorder(),
+                child: const Icon(Icons.add, color: Colors.white, size: 28),
+              ),
+              floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+              bottomNavigationBar: Container(
+                decoration: BoxDecoration(
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.05),
+                      blurRadius: 20,
+                      offset: const Offset(0, -5),
+                    ),
+                  ],
+                ),
+                child: BottomNavigationBar(
+                  currentIndex: _selectedIndex,
+                  onTap: (index) {
+                    if (index == 2) {
+                      _showUploadBottomSheet(context);
+                      return;
+                    }
+                    setState(() {
+                      _selectedIndex = index;
+                    });
+                  },
+                  type: BottomNavigationBarType.fixed,
+                  backgroundColor: isDark ? const Color(0xFF152238) : Colors.white,
+                  selectedItemColor: const Color(0xFF3B48F6),
+                  unselectedItemColor: isDark ? const Color(0xFF94A3B8) : Colors.grey.shade400,
+                  selectedLabelStyle: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600),
+                  unselectedLabelStyle: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w500),
+                  elevation: 0,
+                  items: const [
+                    BottomNavigationBarItem(icon: Icon(Icons.home_outlined), activeIcon: Icon(Icons.home), label: 'Home'),
+                    BottomNavigationBarItem(icon: Icon(Icons.description_outlined), activeIcon: Icon(Icons.description), label: 'Documents'),
+                    BottomNavigationBarItem(
+                      icon: SizedBox(height: 20, child: Icon(Icons.add, color: Colors.transparent)), 
+                      label: '',
+                    ), // FAB space
+                    BottomNavigationBarItem(icon: Icon(Icons.bar_chart_outlined), activeIcon: Icon(Icons.bar_chart), label: 'Reports'),
+                    BottomNavigationBarItem(icon: Icon(Icons.person_outline), activeIcon: Icon(Icons.person), label: 'Profile'),
+                  ],
+                ),
+              ),
+              body: activeBody,
+            );
+          },
+        ),
+      );
+    }
+
+    // Student Dashboard Flow (Global ThemeProvider)
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final bool isDark = themeProvider.isDarkMode;
+
+    Widget activeBody;
+    switch (_selectedIndex) {
+      case 0:
+        activeBody = _buildHomeTab();
+        break;
+      case 1:
+        activeBody = _buildDocumentsTab(context);
+        break;
+      case 2:
+        activeBody = _buildReportsTab(context);
+        break;
+      case 3:
+        activeBody = _buildAnnouncementsTab(context);
+        break;
+      case 4:
+        activeBody = _buildProfileTab(context);
+        break;
+      default:
+        activeBody = _buildHomeTab();
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFAFAFA),
-      floatingActionButton: isOfficer
-          ? FloatingActionButton(
-              onPressed: () => _showUploadBottomSheet(context),
-              backgroundColor: const Color(0xFF3B48F6),
-              elevation: 4,
-              shape: const CircleBorder(),
-              child: const Icon(Icons.add, color: Colors.white, size: 28),
-            )
-          : null,
-      floatingActionButtonLocation: isOfficer
-          ? FloatingActionButtonLocation.centerDocked
-          : null,
+      backgroundColor: isDark ? const Color(0xFF0B192C) : const Color(0xFFFAFAFA),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
+              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.05),
               blurRadius: 20,
               offset: const Offset(0, -5),
             ),
@@ -2250,39 +2494,24 @@ class _DashboardPageState extends State<DashboardPage> {
         child: BottomNavigationBar(
           currentIndex: _selectedIndex,
           onTap: (index) {
-            if (isOfficer && index == 2) {
-              _showUploadBottomSheet(context);
-              return;
-            }
             setState(() {
               _selectedIndex = index;
             });
           },
           type: BottomNavigationBarType.fixed,
-          backgroundColor: Colors.white,
+          backgroundColor: isDark ? const Color(0xFF152238) : Colors.white,
           selectedItemColor: const Color(0xFF3B48F6),
-          unselectedItemColor: Colors.grey.shade400,
+          unselectedItemColor: isDark ? const Color(0xFF94A3B8) : Colors.grey.shade400,
           selectedLabelStyle: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600),
           unselectedLabelStyle: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w500),
           elevation: 0,
-          items: isOfficer
-              ? const [
-                  BottomNavigationBarItem(icon: Icon(Icons.home_outlined), activeIcon: Icon(Icons.home), label: 'Home'),
-                  BottomNavigationBarItem(icon: Icon(Icons.description_outlined), activeIcon: Icon(Icons.description), label: 'Documents'),
-                  BottomNavigationBarItem(
-                    icon: SizedBox(height: 20, child: Icon(Icons.add, color: Colors.transparent)), 
-                    label: '',
-                  ), // FAB space
-                  BottomNavigationBarItem(icon: Icon(Icons.bar_chart_outlined), activeIcon: Icon(Icons.bar_chart), label: 'Reports'),
-                  BottomNavigationBarItem(icon: Icon(Icons.person_outline), activeIcon: Icon(Icons.person), label: 'Profile'),
-                ]
-              : const [
-                  BottomNavigationBarItem(icon: Icon(Icons.home_outlined), activeIcon: Icon(Icons.home), label: 'Home'),
-                  BottomNavigationBarItem(icon: Icon(Icons.description_outlined), activeIcon: Icon(Icons.description), label: 'Documents'),
-                  BottomNavigationBarItem(icon: Icon(Icons.bar_chart_outlined), activeIcon: Icon(Icons.bar_chart), label: 'Reports'),
-                  BottomNavigationBarItem(icon: Icon(Icons.campaign_outlined), activeIcon: Icon(Icons.campaign), label: 'Announcements'),
-                  BottomNavigationBarItem(icon: Icon(Icons.person_outline), activeIcon: Icon(Icons.person), label: 'Profile'),
-                ],
+          items: const [
+            BottomNavigationBarItem(icon: Icon(Icons.home_outlined), activeIcon: Icon(Icons.home), label: 'Home'),
+            BottomNavigationBarItem(icon: Icon(Icons.description_outlined), activeIcon: Icon(Icons.description), label: 'Documents'),
+            BottomNavigationBarItem(icon: Icon(Icons.bar_chart_outlined), activeIcon: Icon(Icons.bar_chart), label: 'Reports'),
+            BottomNavigationBarItem(icon: Icon(Icons.campaign_outlined), activeIcon: Icon(Icons.campaign), label: 'Announcements'),
+            BottomNavigationBarItem(icon: Icon(Icons.person_outline), activeIcon: Icon(Icons.person), label: 'Profile'),
+          ],
         ),
       ),
       body: activeBody,

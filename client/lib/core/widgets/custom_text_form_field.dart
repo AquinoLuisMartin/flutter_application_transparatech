@@ -15,6 +15,7 @@ class CustomTextFormField extends StatefulWidget {
   final String? helperText;
   final ValueChanged<String>? onChanged;
   final Widget? labelTrailing;
+  final FocusNode? focusNode;
 
   const CustomTextFormField({
     super.key,
@@ -30,6 +31,7 @@ class CustomTextFormField extends StatefulWidget {
     this.helperText,
     this.onChanged,
     this.labelTrailing,
+    this.focusNode,
   });
 
   @override
@@ -69,6 +71,7 @@ class _CustomTextFormFieldState extends State<CustomTextFormField> {
         const SizedBox(height: VeriFiSpacing.s8),
         TextFormField(
           controller: widget.controller,
+          focusNode: widget.focusNode,
           keyboardType: widget.inputType,
           obscureText: _isObscured,
           maxLines: widget.isPassword ? 1 : widget.maxLines,
