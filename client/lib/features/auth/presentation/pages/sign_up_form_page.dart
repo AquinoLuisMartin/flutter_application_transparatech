@@ -532,12 +532,11 @@ class _SignUpFormPageState extends State<SignUpFormPage> {
                     ),
                     GestureDetector(
                       onTap: () {
-                        Navigator.pushAndRemoveUntil(
+                        Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
                             builder: (context) => const AuthPage(),
                           ),
-                          (route) => false,
                         );
                       },
                       child: Text(

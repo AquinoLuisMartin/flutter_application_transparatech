@@ -80,18 +80,20 @@ class _AuthPageState extends State<AuthPage> {
         final user = authProvider.currentUser;
         
         if (user?.roleId == 1) {
-          Navigator.pushReplacement(
+          Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(
               builder: (context) => const AdminDashboardPage(),
             ),
+            (route) => false,
           );
         } else {
-          Navigator.pushReplacement(
+          Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(
               builder: (context) => const DashboardPage(),
             ),
+            (route) => false,
           );
         }
       } else if (mounted) {

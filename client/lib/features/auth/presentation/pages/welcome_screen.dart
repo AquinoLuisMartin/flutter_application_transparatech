@@ -77,7 +77,7 @@ class WelcomeScreen extends StatelessWidget {
                       label: 'Sign Up',
                       icon: Icons.person_add_outlined,
                       onPressed: () {
-                        Navigator.pushReplacement(
+                        Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (context) => const SignUpFormPage(),
@@ -91,7 +91,7 @@ class WelcomeScreen extends StatelessWidget {
                       label: 'Log In',
                       icon: Icons.login_outlined,
                       onPressed: () {
-                        Navigator.pushReplacement(
+                        Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (context) => const AuthPage(),
