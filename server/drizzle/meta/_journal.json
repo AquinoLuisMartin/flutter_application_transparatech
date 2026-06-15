@@ -15,6 +15,13 @@
       "when": 1780408405778,
       "tag": "0001_lucky_shooting_star",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1781532844303,
+      "tag": "0002_crazy_crusher_hogan",
+      "breakpoints": true
     }
   ]
 }

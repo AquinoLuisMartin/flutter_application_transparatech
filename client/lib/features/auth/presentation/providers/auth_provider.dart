@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/network/http_client.dart';
 import '../../data/models/user_model.dart';
 
@@ -43,6 +45,11 @@ class AuthProvider extends ChangeNotifier {
         _currentUser = User.fromJson(response.data['account']);
         _isSignedIn = true;
         _isLoading = false;
+        
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('token', _token!);
+        await prefs.setString('user', json.encode(_currentUser!.toJson()));
+        
         notifyListeners();
         return true;
       } else {
@@ -79,6 +86,11 @@ class AuthProvider extends ChangeNotifier {
         _currentUser = User.fromJson(response.data['account']);
         _isSignedIn = true;
         _isLoading = false;
+        
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('token', _token!);
+        await prefs.setString('user', json.encode(_currentUser!.toJson()));
+        
         notifyListeners();
         return true;
       } else {
@@ -106,6 +118,10 @@ class AuthProvider extends ChangeNotifier {
 
       if (response.isSuccess) {
         _currentUser = User.fromJson(response.data);
+        
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('user', json.encode(_currentUser!.toJson()));
+        
         notifyListeners();
       }
     } catch (e) {
@@ -114,11 +130,39 @@ class AuthProvider extends ChangeNotifier {
   }
 
   // Sign Out
-  void signOut() {
+  Future<void> signOut() async {
     _token = null;
     _currentUser = null;
     _isSignedIn = false;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('token');
+    await prefs.remove('user');
     notifyListeners();
+  }
+
+  // Try Auto Sign In
+  Future<bool> tryAutoSignIn() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (!prefs.containsKey('token')) return false;
+
+      _token = prefs.getString('token');
+      final userStr = prefs.getString('user');
+      if (userStr != null) {
+        _currentUser = User.fromJson(json.decode(userStr));
+      }
+
+      if (_token != null && _currentUser != null) {
+        _isSignedIn = true;
+        notifyListeners();
+        // Refresh profile in background
+        getProfile();
+        return true;
+      }
+    } catch (e) {
+      debugPrint('Error in tryAutoSignIn: $e');
+    }
+    return false;
   }
 
   // Clear error

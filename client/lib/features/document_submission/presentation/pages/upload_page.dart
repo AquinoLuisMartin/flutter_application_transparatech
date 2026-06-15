@@ -2,6 +2,8 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:flutter_application_transparatech/core/theme/verifi_theme.dart';
 import 'package:flutter_application_transparatech/core/widgets/widgets.dart';
 import 'package:flutter_application_transparatech/features/auth/presentation/providers/auth_provider.dart';
@@ -32,6 +34,8 @@ class _UploadPageState extends State<UploadPage> {
   final _amountFocusNode = FocusNode();
   String? _selectedOrg;
   String? _selectedFileName;
+  int? _selectedFileSize;
+  String? _selectedFileType;
   bool _isSubmitting = false;
 
   @override
@@ -161,22 +165,101 @@ class _UploadPageState extends State<UploadPage> {
     return null;
   }
 
-  void _simulateFileUpload() {
-    setState(() {
-      _selectedFileName = 'Q4_2025_Expenses_Receipts.pdf';
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Selected file: Q4_2025_Expenses_Receipts.pdf (14.2 MB)'),
-        duration: Duration(seconds: 2),
-      ),
-    );
+  Future<void> _pickDocument() async {
+    try {
+      final selection = await showModalBottomSheet<String>(
+        context: context,
+        backgroundColor: Colors.transparent,
+        builder: (context) {
+          return Container(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Select Document Source',
+                  style: GoogleFonts.inter(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF1F2937),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                ListTile(
+                  leading: const Icon(Icons.picture_as_pdf, color: Color(0xFF3B48F6)),
+                  title: const Text('Browse Files (PDF, Docs, Images)'),
+                  onTap: () => Navigator.pop(context, 'file'),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.camera_alt, color: Color(0xFF10B981)),
+                  title: const Text('Take Photo of Receipt / Document'),
+                  onTap: () => Navigator.pop(context, 'camera'),
+                ),
+              ],
+            ),
+          );
+        },
+      );
+
+      if (selection == 'file') {
+        final result = await FilePicker.platform.pickFiles(
+          type: FileType.custom,
+          allowedExtensions: ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'],
+        );
+
+        if (result != null && result.files.isNotEmpty) {
+          final file = result.files.first;
+          setState(() {
+            _selectedFileName = file.name;
+            _selectedFileSize = file.size;
+            _selectedFileType = file.extension != null ? 'application/${file.extension}' : 'application/octet-stream';
+          });
+        }
+      } else if (selection == 'camera') {
+        final picker = ImagePicker();
+        final image = await picker.pickImage(source: ImageSource.camera, imageQuality: 85);
+
+        if (image != null) {
+          final size = await image.length();
+          setState(() {
+            _selectedFileName = image.name;
+            _selectedFileSize = size;
+            _selectedFileType = 'image/jpeg';
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error selecting document: $e')),
+        );
+      }
+    }
   }
 
   void _removeFile() {
     setState(() {
       _selectedFileName = null;
+      _selectedFileSize = null;
+      _selectedFileType = null;
     });
+  }
+
+  String _formatBytes(int bytes) {
+    if (bytes <= 0) return '0 B';
+    const suffixes = ['B', 'KB', 'MB', 'GB'];
+    var i = 0;
+    double size = bytes.toDouble();
+    while (size >= 1024 && i < suffixes.length - 1) {
+      size /= 1024;
+      i++;
+    }
+    return '${size.toStringAsFixed(1)} ${suffixes[i]}';
   }
 
   Future<void> _handleSubmit() async {
@@ -236,8 +319,8 @@ class _UploadPageState extends State<UploadPage> {
         title: _titleController.text.trim(),
         description: payloadDescription,
         filePath: _selectedFileName!,
-        fileSize: 1024 * 142, // default simulated file size
-        fileType: 'application/pdf',
+        fileSize: _selectedFileSize ?? 0,
+        fileType: _selectedFileType ?? 'application/pdf',
       );
 
       if (mounted) {
@@ -299,12 +382,15 @@ class _UploadPageState extends State<UploadPage> {
                   ),
                 ),
                 const SizedBox(width: 16),
-                Text(
-                  'Upload Financial Documents',
-                  style: GoogleFonts.inter(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                Expanded(
+                  child: Text(
+                    'Upload Financial Documents',
+                    style: GoogleFonts.inter(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
@@ -341,7 +427,7 @@ class _UploadPageState extends State<UploadPage> {
                     const SizedBox(height: 8),
                     
                     GestureDetector(
-                      onTap: _selectedFileName == null ? _simulateFileUpload : null,
+                      onTap: _selectedFileName == null ? _pickDocument : null,
                       child: CustomPaint(
                         painter: DashedBorderPainter(
                           color: const Color(0xFFDCDCE6),
@@ -387,7 +473,7 @@ class _UploadPageState extends State<UploadPage> {
                                           ),
                                           const SizedBox(height: 4),
                                           Text(
-                                            '14.2 MB • Ready to submit',
+                                            '${_formatBytes(_selectedFileSize ?? 0)} • Ready to submit',
                                             style: GoogleFonts.inter(
                                               fontSize: 12,
                                               color: VeriFiColors.textGrey,
@@ -459,11 +545,16 @@ class _UploadPageState extends State<UploadPage> {
                     CustomDropdownField<String>(
                       label: 'Organization *',
                       value: _selectedOrg,
-                      hintText: 'e.g. ISITE',
+                      hintText: 'e.g. iSITE',
+                      fontSize: 12,
                       items: const [
-                        DropdownMenuItem(value: 'ACES', child: Text('ACES')),
-                        DropdownMenuItem(value: 'iSITE', child: Text('iSITE')),
-                        DropdownMenuItem(value: 'COSC', child: Text('COSC')),
+                        DropdownMenuItem(value: 'ACES', child: Text('Alliance of Computer Engineering Students (ACES)')),
+                        DropdownMenuItem(value: 'iSITE', child: Text('Integrated Students in Information Technology Education (iSITE)')),
+                        DropdownMenuItem(value: 'AFT', child: Text('Association of Future Teachers (AFT)')),
+                        DropdownMenuItem(value: 'HMSOC', child: Text('Hospitality Management Society (HMSOC)')),
+                        DropdownMenuItem(value: 'CEM', child: Text('Chamber of Entrepreneurs and Managers (CEM)')),
+                        DropdownMenuItem(value: 'JPIA', child: Text('Junior Philippine Institute of Accountancy - Sta Maria (JPIA)')),
+                        DropdownMenuItem(value: 'DOMT', child: Text('Diploma in Office Management SY-Quest (DOMT)')),
                       ],
                       onChanged: (value) {
                         setState(() {
@@ -484,7 +575,7 @@ class _UploadPageState extends State<UploadPage> {
                     
                     CustomTextFormField(
                       label: _amountLabel,
-                      hintText: 'e.g. ISITE',
+                      hintText: 'e.g. 0,000.00',
                       controller: _amountController,
                       focusNode: _amountFocusNode,
                       inputType: const TextInputType.numberWithOptions(decimal: true),

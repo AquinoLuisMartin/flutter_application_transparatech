@@ -1,6 +1,8 @@
-import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'dart:io';
+import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:flutter_application_transparatech/core/theme/verifi_theme.dart';
 import 'package:flutter_application_transparatech/core/widgets/widgets.dart';
 import 'account_verification_page.dart';
@@ -28,11 +30,12 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
   final _formKey = GlobalKey<FormState>();
   final _fullNameController = TextEditingController();
   
-  File? _profilePhoto;
-  File? _studentIdImage;
+  XFile? _profilePhoto;
+  XFile? _studentIdImage;
   bool _isPhotoSelected = false;
   bool _isStudentIdSelected = false;
   bool _isFullNameValid = false;
+  final ImagePicker _picker = ImagePicker();
 
   @override
   void dispose() {
@@ -63,7 +66,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
 
   Future<void> _pickProfilePhoto() async {
     try {
-      showDialog(
+      final source = await showDialog<ImageSource>(
         context: context,
         builder: (BuildContext context) {
           return AlertDialog(
@@ -71,37 +74,44 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
             content: const Text('Choose camera or gallery'),
             actions: [
               TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  setState(() {
-                    _isPhotoSelected = true;
-                  });
-                },
+                onPressed: () => Navigator.pop(context, ImageSource.camera),
                 child: const Text('Camera'),
               ),
               TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  setState(() {
-                    _isPhotoSelected = true;
-                  });
-                },
+                onPressed: () => Navigator.pop(context, ImageSource.gallery),
                 child: const Text('Gallery'),
               ),
             ],
           );
         },
       );
+
+      if (source != null) {
+        final XFile? image = await _picker.pickImage(
+          source: source,
+          maxWidth: 800,
+          maxHeight: 800,
+          imageQuality: 85,
+        );
+        if (image != null) {
+          setState(() {
+            _profilePhoto = image;
+            _isPhotoSelected = true;
+          });
+        }
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error picking photo: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error picking photo: $e')),
+        );
+      }
     }
   }
 
   Future<void> _pickStudentIdImage() async {
     try {
-      showDialog(
+      final source = await showDialog<ImageSource>(
         context: context,
         builder: (BuildContext context) {
           return AlertDialog(
@@ -109,31 +119,38 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
             content: const Text('Choose camera or gallery'),
             actions: [
               TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  setState(() {
-                    _isStudentIdSelected = true;
-                  });
-                },
+                onPressed: () => Navigator.pop(context, ImageSource.camera),
                 child: const Text('Camera'),
               ),
               TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  setState(() {
-                    _isStudentIdSelected = true;
-                  });
-                },
+                onPressed: () => Navigator.pop(context, ImageSource.gallery),
                 child: const Text('Gallery'),
               ),
             ],
           );
         },
       );
+
+      if (source != null) {
+        final XFile? image = await _picker.pickImage(
+          source: source,
+          maxWidth: 1200,
+          maxHeight: 1200,
+          imageQuality: 85,
+        );
+        if (image != null) {
+          setState(() {
+            _studentIdImage = image;
+            _isStudentIdSelected = true;
+          });
+        }
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error picking image: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error picking image: $e')),
+        );
+      }
     }
   }
 
@@ -239,7 +256,9 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
                   child: _profilePhoto != null
                       ? ClipRRect(
                           borderRadius: BorderRadius.circular(12),
-                          child: Image.file(_profilePhoto!, fit: BoxFit.cover),
+                          child: kIsWeb
+                              ? Image.network(_profilePhoto!.path, fit: BoxFit.cover)
+                              : Image.file(File(_profilePhoto!.path), fit: BoxFit.cover),
                         )
                       : _isPhotoSelected
                           ? Column(
@@ -328,7 +347,9 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
                   child: _studentIdImage != null
                       ? ClipRRect(
                           borderRadius: BorderRadius.circular(12),
-                          child: Image.file(_studentIdImage!, fit: BoxFit.cover),
+                          child: kIsWeb
+                              ? Image.network(_studentIdImage!.path, fit: BoxFit.cover)
+                              : Image.file(File(_studentIdImage!.path), fit: BoxFit.cover),
                         )
                       : _isStudentIdSelected
                           ? Column(

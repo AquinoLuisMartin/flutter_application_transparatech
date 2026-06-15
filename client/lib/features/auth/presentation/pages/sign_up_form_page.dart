@@ -22,6 +22,7 @@ class _SignUpFormPageState extends State<SignUpFormPage> {
   final _confirmPasswordController = TextEditingController();
   
   String? _selectedRole = 'Student';
+  String? _selectedOrg;
   bool _isEmailValid = false;
   bool _isStudentIdValid = false;
   bool _isLoading = false;
@@ -161,15 +162,20 @@ class _SignUpFormPageState extends State<SignUpFormPage> {
 
     try {
       final client = ApiClient();
+      final body = {
+        'email': _emailController.text.trim(),
+        'studentId': _studentIdController.text.trim(),
+        'password': _passwordController.text,
+        'role': _selectedRole,
+        'fullName': _emailController.text.split('@')[0], // Will be overridden in next step
+      };
+      if (_selectedRole == 'Officer' || _selectedRole == 'Student') {
+        body['organizationCode'] = _selectedOrg ?? '';
+      }
+
       final response = await client.post(
         '/api/auth/signup',
-        body: {
-          'email': _emailController.text.trim(),
-          'studentId': _studentIdController.text.trim(),
-          'password': _passwordController.text,
-          'role': _selectedRole,
-          'fullName': _emailController.text.split('@')[0], // Will be overridden in next step
-        },
+        body: body,
       );
 
       if (!mounted) return;
@@ -301,12 +307,15 @@ class _SignUpFormPageState extends State<SignUpFormPage> {
           color: isMet ? Colors.blue.shade500 : Colors.grey.shade400,
         ),
         const SizedBox(width: 4),
-        Text(
-          text,
-          style: GoogleFonts.inter(
-            fontSize: 11,
-            color: isMet ? Colors.blue.shade500 : Colors.grey.shade500,
-            fontWeight: FontWeight.w500,
+        Expanded(
+          child: Text(
+            text,
+            style: GoogleFonts.inter(
+              fontSize: 11,
+              color: isMet ? Colors.blue.shade500 : Colors.grey.shade500,
+              fontWeight: FontWeight.w500,
+            ),
+            overflow: TextOverflow.ellipsis,
           ),
         ),
       ],
@@ -426,6 +435,7 @@ class _SignUpFormPageState extends State<SignUpFormPage> {
                 onChanged: (value) {
                   setState(() {
                     _selectedRole = value;
+                    _selectedOrg = null; // Reset organization when role changes
                     // Re-validate ID and Email when role changes
                     _onStudentIdChanged(_studentIdController.text);
                     _onEmailChanged(_emailController.text);
@@ -433,6 +443,31 @@ class _SignUpFormPageState extends State<SignUpFormPage> {
                 },
                 validator: (value) => value == null ? 'Please select a role' : null,
               ),
+              if (_selectedRole == 'Student' || _selectedRole == 'Officer') ...[
+                const SizedBox(height: 20),
+                CustomDropdownField<String>(
+                  label: 'Organization *',
+                  value: _selectedOrg,
+                  prefixIcon: 'group',
+                  hintText: 'Select Organization',
+                  fontSize: 12,
+                  items: const [
+                    DropdownMenuItem(value: 'ACES', child: Text('Alliance of Computer Engineering Students (ACES)')),
+                    DropdownMenuItem(value: 'iSITE', child: Text('Integrated Students in Information Technology Education (iSITE)')),
+                    DropdownMenuItem(value: 'AFT', child: Text('Association of Future Teachers (AFT)')),
+                    DropdownMenuItem(value: 'HMSOC', child: Text('Hospitality Management Society (HMSOC)')),
+                    DropdownMenuItem(value: 'CEM', child: Text('Chamber of Entrepreneurs and Managers (CEM)')),
+                    DropdownMenuItem(value: 'JPIA', child: Text('Junior Philippine Institute of Accountancy - Sta Maria (JPIA)')),
+                    DropdownMenuItem(value: 'DOMT', child: Text('Diploma in Office Management SY-Quest (DOMT)')),
+                  ],
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedOrg = value;
+                    });
+                  },
+                  validator: (value) => value == null || value.isEmpty ? 'Organization is required' : null,
+                ),
+              ],
               const SizedBox(height: 20),
 
               CustomTextFormField(

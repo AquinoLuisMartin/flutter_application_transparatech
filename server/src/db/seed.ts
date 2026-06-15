@@ -1,6 +1,6 @@
 import { db } from "./index.js";
 import { roles, documentStatuses, organizations, budgets, accounts } from "./schema.js";
-import { eq } from "drizzle-orm";
+import { eq, or } from "drizzle-orm";
 import * as authService from "../services/auth.service.js";
 
 async function seed() {
@@ -35,36 +35,52 @@ async function seed() {
     }
 
     // Seed Organizations
-    const existingOrgs = await db.select().from(organizations);
-    let coscOrgId: number | undefined;
+    console.log("Seeding organizations...");
+    const orgsToSeed = [
+      { orgCode: "ACES", orgName: "Alliance of Computer Engineering Students", description: "Official organization for Computer Engineering students" },
+      { orgCode: "iSITE", orgName: "Integrated Students in Information Technology Education", description: "Official organization for Information Technology students" },
+      { orgCode: "AFT", orgName: "Association of Future Teachers", description: "Official organization for Education students" },
+      { orgCode: "HMSOC", orgName: "Hospitality Management Society", description: "Official organization for Hospitality Management students" },
+      { orgCode: "CEM", orgName: "Chamber of Entrepreneurs and Managers", description: "Official organization for Business Administration students" },
+      { orgCode: "JPIA", orgName: "Junior Philippine Institute of Accountancy - Sta Maria", description: "Official organization for Accountancy students" },
+      { orgCode: "DOMT", orgName: "Diploma in Office Management SY-Quest", description: "Official organization for Office Management students" },
+    ];
 
-    if (existingOrgs.length === 0) {
-      console.log("Seeding organizations...");
-      const orgs = await db.insert(organizations).values([
-        { orgName: "Computer Science Society", orgCode: "COSC", description: "Official organization for CS students" },
-        { orgName: "Information Systems and Information Technology Educators", orgCode: "ISITE", description: "Official organization for IS/IT students" },
-      ]).returning();
+    for (const orgData of orgsToSeed) {
+      let org = await db.select().from(organizations).where(eq(organizations.orgCode, orgData.orgCode)).limit(1);
+      let orgId: number;
+      if (org.length === 0) {
+        console.log(`Seeding organization ${orgData.orgCode}...`);
+        const inserted = await db.insert(organizations).values({
+          orgName: orgData.orgName,
+          orgCode: orgData.orgCode,
+          description: orgData.description,
+        }).returning();
+        orgId = inserted[0].organizationId;
 
-      coscOrgId = orgs.find(o => o.orgCode === "COSC")?.organizationId;
-
-      // Seed Budgets for these organizations
-      console.log("Seeding budgets...");
-      for (const org of orgs) {
+        // Seed budget for this organization
         await db.insert(budgets).values({
-          organizationId: org.organizationId,
+          organizationId: orgId,
           academicYear: "2025-2026",
           totalBudget: 15000000, // 150,000.00 in cents
           spentAmount: 2500000,  // 25,000.00 spent
           remainingAmount: 12500000,
         }).run();
       }
-    } else {
-      coscOrgId = existingOrgs.find(o => o.orgCode === "COSC")?.organizationId;
     }
 
+    const allOrgs = await db.select().from(organizations);
+    const isiteOrgId = allOrgs.find(o => o.orgCode === "iSITE")?.organizationId;
+    const acesOrgId = allOrgs.find(o => o.orgCode === "ACES")?.organizationId;
+
     // Seed a Test Officer Account
-    const existingOfficer = await db.select().from(accounts).where(eq(accounts.email, "officer@pup.edu.ph")).limit(1);
-    if (existingOfficer.length === 0 && officerRole && coscOrgId) {
+    const existingOfficer = await db.select().from(accounts).where(
+      or(
+        eq(accounts.email, "officer@pup.edu.ph"),
+        eq(accounts.username, "officer_test")
+      )
+    ).limit(1);
+    if (existingOfficer.length === 0 && officerRole && isiteOrgId) {
       console.log("Seeding test officer account...");
       const hashedPassword = await authService.hashPassword("Password123!");
       await db.insert(accounts).values({
@@ -75,12 +91,37 @@ async function seed() {
         firstName: "Officer",
         lastName: "Test",
         roleId: officerRole.roleId,
-        organizationId: coscOrgId,
+        organizationId: isiteOrgId,
         isActive: 1,
         isVerified: 1,
       }).run();
       console.log("Test officer created: officer@pup.edu.ph / Password123!");
     }
+
+    // Assign correct organization IDs to existing test/registered accounts
+    console.log("Updating existing accounts with correct organization associations...");
+    if (isiteOrgId) {
+      // Update aira to iSITE
+      await db.update(accounts)
+        .set({ organizationId: isiteOrgId })
+        .where(eq(accounts.username, "aira"))
+        .run();
+      
+      // Update officer_test to iSITE (if email is different or username exists)
+      await db.update(accounts)
+        .set({ organizationId: isiteOrgId })
+        .where(eq(accounts.username, "officer_test"))
+        .run();
+    }
+
+    if (acesOrgId) {
+      // Update leo to ACES
+      await db.update(accounts)
+        .set({ organizationId: acesOrgId })
+        .where(eq(accounts.username, "leo"))
+        .run();
+    }
+
 
     // Seed a Test Admin Account
     const existingAdmin = await db.select().from(accounts).where(eq(accounts.email, "admin@pup.edu.ph")).limit(1);

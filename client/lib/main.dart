@@ -12,6 +12,8 @@ import 'package:flutter_application_transparatech/core/providers/theme_provider.
 import 'package:flutter_application_transparatech/features/admin/presentation/providers/admin_queue_provider.dart';
 import 'package:flutter_application_transparatech/features/admin/presentation/providers/admin_notification_provider.dart';
 import 'package:flutter_application_transparatech/features/dashboard/presentation/providers/student_notification_provider.dart';
+import 'package:flutter_application_transparatech/features/dashboard/presentation/pages/dashboard_page.dart';
+import 'package:flutter_application_transparatech/features/admin/presentation/pages/admin_dashboard_page.dart';
 
 void main() {
   // Initialize logger and logging
@@ -45,7 +47,7 @@ class MyApp extends StatelessWidget {
       theme: VeriFiTheme.lightTheme,
       darkTheme: VeriFiTheme.darkTheme,
       themeMode: themeProvider.themeMode,
-      home: const LandingPage(),
+      home: const AuthWrapper(),
       routes: {
         '/login': (context) => const AuthPage(),
       },
@@ -53,3 +55,56 @@ class MyApp extends StatelessWidget {
     );
   }
 }
+
+class AuthWrapper extends StatefulWidget {
+  const AuthWrapper({super.key});
+
+  @override
+  State<AuthWrapper> createState() => _AuthWrapperState();
+}
+
+class _AuthWrapperState extends State<AuthWrapper> {
+  bool _initialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkAuth();
+  }
+
+  Future<void> _checkAuth() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    await authProvider.tryAutoSignIn();
+    if (mounted) {
+      setState(() {
+        _initialized = true;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_initialized) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(
+            color: VeriFiColors.primary,
+          ),
+        ),
+      );
+    }
+
+    final authProvider = Provider.of<AuthProvider>(context);
+    if (authProvider.isSignedIn) {
+      final user = authProvider.currentUser;
+      if (user?.roleId == 1) {
+        return const AdminDashboardPage();
+      } else {
+        return const DashboardPage();
+      }
+    }
+
+    return const LandingPage();
+  }
+}
+

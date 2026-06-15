@@ -887,57 +887,7 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  Widget _buildQuickActionButton(
-    BuildContext context, {
-    required IconData icon,
-    required String label,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    final isDark = Provider.of<ThemeProvider>(context).isDarkMode;
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 6),
-          padding: const EdgeInsets.symmetric(vertical: 18),
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF152238) : Colors.white,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.shade100),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.02),
-                blurRadius: 8,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Column(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, color: color, size: 24),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                label,
-                style: GoogleFonts.inter(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white : const Color(0xFF4B5563),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+
 
   String _formatCurrency(double amount) {
     final String raw = amount.toStringAsFixed(2);
@@ -1033,15 +983,19 @@ class _DashboardPageState extends State<DashboardPage> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          '$orgName Wallet',
-                          style: GoogleFonts.inter(
-                            fontSize: 12,
-                            color: Colors.white.withValues(alpha: 0.8),
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 0.5,
+                        Expanded(
+                          child: Text(
+                            '$orgName Wallet',
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              color: Colors.white.withValues(alpha: 0.8),
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.5,
+                            ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
+                        const SizedBox(width: 8),
                         // Premium Gold Chip
                         Container(
                           width: 36,
@@ -1103,20 +1057,24 @@ class _DashboardPageState extends State<DashboardPage> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              'Spent: ${_formatCurrency(spent)}',
-                              style: GoogleFonts.inter(
-                                fontSize: 11,
-                                color: Colors.white.withValues(alpha: 0.8),
-                                fontWeight: FontWeight.w500,
+                            Expanded(
+                              child: Text(
+                                'Spent: ${_formatCurrency(spent)}',
+                                style: GoogleFonts.inter(
+                                  fontSize: 11,
+                                  color: Colors.white.withValues(alpha: 0.8),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
+                            const SizedBox(width: 8),
                             Text(
                               '${(spentPercent * 100).toInt()}%',
                               style: GoogleFonts.inter(
-                                fontSize: 11,
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
+                                  fontSize: 11,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
                               ),
                             ),
                           ],
@@ -1172,52 +1130,6 @@ class _DashboardPageState extends State<DashboardPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Quick Actions Section
-                  Text(
-                    'Quick Actions',
-                    style: GoogleFonts.inter(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: isDark ? Colors.white : const Color(0xFF1F2937),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      _buildQuickActionButton(
-                        context,
-                        icon: Icons.cloud_upload_outlined,
-                        label: 'Upload Doc',
-                        color: const Color(0xFF3B82F6), // Blue
-                        onTap: () => _showUploadBottomSheet(context),
-                      ),
-                      _buildQuickActionButton(
-                        context,
-                        icon: Icons.search_outlined,
-                        label: 'Search',
-                        color: const Color(0xFF8B5CF6), // Purple
-                        onTap: () {
-                          setState(() {
-                            _selectedIndex = 1; // Switch to Documents Tab
-                          });
-                        },
-                      ),
-                      _buildQuickActionButton(
-                        context,
-                        icon: Icons.analytics_outlined,
-                        label: 'Reports',
-                        color: const Color(0xFF10B981), // Green
-                        onTap: () {
-                          setState(() {
-                            _selectedIndex = 3; // Switch to Reports Tab
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 32),
-
                   // Organization AI Analysis Banner
                   Container(
                     padding: const EdgeInsets.all(20),
@@ -1233,12 +1145,15 @@ class _DashboardPageState extends State<DashboardPage> {
                           children: [
                             Icon(Icons.auto_awesome, color: Colors.blue.shade600, size: 18),
                             const SizedBox(width: 8),
-                            Text(
-                              '$orgName AI Analysis',
-                              style: GoogleFonts.inter(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                color: isDark ? Colors.white : Colors.blue.shade800,
+                            Expanded(
+                              child: Text(
+                                '$orgName AI Analysis',
+                                style: GoogleFonts.inter(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: isDark ? Colors.white : Colors.blue.shade800,
+                                ),
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ],
@@ -1389,14 +1304,18 @@ class _DashboardPageState extends State<DashboardPage> {
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
-                                      Text(
-                                        'SHA-256 Verified',
-                                        style: GoogleFonts.inter(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w500,
-                                          color: isDark ? const Color(0xFF94A3B8) : Colors.grey.shade600,
+                                      Expanded(
+                                        child: Text(
+                                          'SHA-256 Verified',
+                                          style: GoogleFonts.inter(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w500,
+                                            color: isDark ? const Color(0xFF94A3B8) : Colors.grey.shade600,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
                                         ),
                                       ),
+                                      const SizedBox(width: 8),
                                       Text(
                                         '${(verifiedRatio * 100).toInt()}%',
                                         style: GoogleFonts.inter(
@@ -1428,14 +1347,18 @@ class _DashboardPageState extends State<DashboardPage> {
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
-                                      Text(
-                                        'Audit Indexed',
-                                        style: GoogleFonts.inter(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w500,
-                                          color: isDark ? const Color(0xFF94A3B8) : Colors.grey.shade600,
+                                      Expanded(
+                                        child: Text(
+                                          'Audit Indexed',
+                                          style: GoogleFonts.inter(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w500,
+                                            color: isDark ? const Color(0xFF94A3B8) : Colors.grey.shade600,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
                                         ),
                                       ),
+                                      const SizedBox(width: 8),
                                       Text(
                                         '${(indexedRatio * 100).toInt()}%',
                                         style: GoogleFonts.inter(
@@ -2140,12 +2063,18 @@ class _DashboardPageState extends State<DashboardPage> {
               color: isDark ? const Color(0xFF94A3B8) : Colors.grey.shade500,
             ),
           ),
-          Text(
-            value,
-            style: GoogleFonts.inter(
-              fontSize: 13,
-              fontWeight: FontWeight.bold,
-              color: isDark ? Colors.white : const Color(0xFF1F2937),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Text(
+              value,
+              textAlign: TextAlign.end,
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.white : const Color(0xFF1F2937),
+              ),
             ),
           ),
         ],

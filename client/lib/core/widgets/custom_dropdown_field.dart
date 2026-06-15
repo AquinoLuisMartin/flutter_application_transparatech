@@ -10,6 +10,7 @@ class CustomDropdownField<T> extends StatelessWidget {
   final String? Function(T?)? validator;
   final String? prefixIcon;
   final String? hintText;
+  final double? fontSize;
 
   const CustomDropdownField({
     super.key,
@@ -20,6 +21,7 @@ class CustomDropdownField<T> extends StatelessWidget {
     this.validator,
     this.prefixIcon,
     this.hintText,
+    this.fontSize,
   });
 
   @override
@@ -39,8 +41,9 @@ class CustomDropdownField<T> extends StatelessWidget {
           items: items,
           onChanged: onChanged,
           validator: validator,
+          isExpanded: true,
           style: GoogleFonts.inter(
-            fontSize: 14,
+            fontSize: fontSize ?? 13,
             fontWeight: FontWeight.w500,
             color: VeriFiColors.textDark,
           ),
@@ -48,7 +51,7 @@ class CustomDropdownField<T> extends StatelessWidget {
             hintText: hintText,
             hintStyle: GoogleFonts.inter(
               color: VeriFiColors.textLight,
-              fontSize: 14,
+              fontSize: fontSize ?? 13,
             ),
             prefixIcon: prefixIcon != null
                 ? Padding(

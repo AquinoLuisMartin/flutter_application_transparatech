@@ -74,7 +74,7 @@ export const accounts = sqliteTable("accounts", {
   idxCreatedAt: index("idx_acc_created_at").on(table.createdAt),
   checkIsActive: check("accounts_is_active_check", sql`${table.isActive} IN (0, 1)`),
   checkIsVerified: check("accounts_is_verified_check", sql`${table.isVerified} IN (0, 1)`),
-  checkEmailDomain: check("accounts_email_domain_check", sql`${table.email} LIKE '%@pup.edu.ph'`),
+  checkEmailDomain: check("accounts_email_domain_check", sql`${table.email} LIKE '%@pup.edu.ph' OR ${table.email} LIKE '%@iskolarngbayan.pup.edu.ph' OR ${table.email} LIKE '%@iskolarngbayang.pup.edu.ph'`),
   checkStudentIdFormat: check("accounts_student_id_format_check", sql`${table.studentId} LIKE '____-_____-SM-_' OR ${table.studentId} LIKE 'FA-____-SM-____'`),
 }));
 
