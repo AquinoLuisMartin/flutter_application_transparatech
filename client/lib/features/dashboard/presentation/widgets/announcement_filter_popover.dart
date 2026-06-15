@@ -188,9 +188,29 @@ class _AnnouncementFilterPopOverState extends State<AnnouncementFilterPopOver> {
                     onTap: () => _toggleOrg('iSITE'),
                   ),
                   _buildCheckboxRow(
-                    label: 'COSC',
-                    isChecked: _selectedOrgs.contains('COSC'),
-                    onTap: () => _toggleOrg('COSC'),
+                    label: 'AFT',
+                    isChecked: _selectedOrgs.contains('AFT'),
+                    onTap: () => _toggleOrg('AFT'),
+                  ),
+                  _buildCheckboxRow(
+                    label: 'HMSOC',
+                    isChecked: _selectedOrgs.contains('HMSOC'),
+                    onTap: () => _toggleOrg('HMSOC'),
+                  ),
+                  _buildCheckboxRow(
+                    label: 'CEM',
+                    isChecked: _selectedOrgs.contains('CEM'),
+                    onTap: () => _toggleOrg('CEM'),
+                  ),
+                  _buildCheckboxRow(
+                    label: 'JPIA',
+                    isChecked: _selectedOrgs.contains('JPIA'),
+                    onTap: () => _toggleOrg('JPIA'),
+                  ),
+                  _buildCheckboxRow(
+                    label: 'DOMT',
+                    isChecked: _selectedOrgs.contains('DOMT'),
+                    onTap: () => _toggleOrg('DOMT'),
                   ),
                   const SizedBox(height: 16),
                   const Divider(height: 1, thickness: 1, color: Color(0xFFF3F4F6)),

@@ -34,16 +34,8 @@ class _AdminAuditLogsScreenState extends State<AdminAuditLogsScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _selectedFilter = 'All'; // 'All', 'Uploaded', 'Approved', 'Rejected', 'Updated'
 
-  // Initial default logging records
-  final List<AuditLogItem> _logs = [
-    AuditLogItem(actorRole: 'Officer', actorName: 'Juan Dela Cruz', action: 'uploaded', fileName: 'Tech Summit 2026 Event Budget', taxType: 'Budget Proposal', timestamp: 'April 7, 9:00 AM'),
-    AuditLogItem(actorRole: 'Admin', actorName: 'Pauline Catalan', action: 'approved', fileName: 'ACES General Assembly Receipt', taxType: 'Expense Report', timestamp: 'April 7, 10:15 AM'),
-    AuditLogItem(actorRole: 'Admin', actorName: 'Pauline Catalan', action: 'rejected', fileName: 'iSITE Logistics Invoice', taxType: 'Invoice', timestamp: 'April 7, 11:30 AM'),
-    AuditLogItem(actorRole: 'Officer', actorName: 'Maria Santos', action: 'updated', fileName: 'JPCS Financial Report V1', taxType: 'Budget Proposal', timestamp: 'April 7, 1:45 PM'),
-    AuditLogItem(actorRole: 'Officer', actorName: 'Princess Pastrana', action: 'uploaded', fileName: 'JPIA Ledger Sheet', taxType: 'Expense Report', timestamp: 'April 7, 2:10 PM'),
-    AuditLogItem(actorRole: 'Admin', actorName: 'admin admin', action: 'approved', fileName: 'AFT Purchase Receipt', taxType: 'Receipt', timestamp: 'April 7, 3:30 PM'),
-    AuditLogItem(actorRole: 'Admin', actorName: 'admin admin', action: 'updated', fileName: 'DOMT Budget Proposal V2', taxType: 'Budget Proposal', timestamp: 'April 7, 4:00 PM'),
-  ];
+  // Audit logs - to be fetched from server when activity_logs API is implemented
+  final List<AuditLogItem> _logs = [];
 
   @override
   void dispose() {

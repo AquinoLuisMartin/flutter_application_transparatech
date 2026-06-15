@@ -15,32 +15,8 @@ class StudentNotificationItem {
 }
 
 class StudentNotificationProvider with ChangeNotifier {
-  final List<StudentNotificationItem> _notifications = [
-    StudentNotificationItem(
-      id: '1',
-      message: 'Document Verified: Q4 2025 Expense Report has been verified by the COSC Society auditor.',
-      time: '2h ago',
-      isRead: false,
-    ),
-    StudentNotificationItem(
-      id: '2',
-      message: 'New Submission: Maria Reyes submitted Tech Summit 2026 Budget Proposal for review.',
-      time: '5h ago',
-      isRead: false,
-    ),
-    StudentNotificationItem(
-      id: '3',
-      message: 'Audit Reminder: Monthly financial audit for COSC Society is due on March 30, 2026.',
-      time: '1d ago',
-      isRead: true,
-    ),
-    StudentNotificationItem(
-      id: '4',
-      message: 'Hash Integrity Alert: SSC-COSC Sponsorship Agreement flagged for hash mismatch. Manual review required.',
-      time: '2d ago',
-      isRead: false,
-    ),
-  ];
+  // Notifications - to be fetched from server when notifications API is implemented
+  final List<StudentNotificationItem> _notifications = [];
 
   List<StudentNotificationItem> get notifications => _notifications;
 

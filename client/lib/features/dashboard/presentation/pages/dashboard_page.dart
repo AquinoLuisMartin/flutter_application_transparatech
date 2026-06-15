@@ -90,38 +90,7 @@ class _DashboardPageState extends State<DashboardPage> {
   bool _isNotificationPopOverOpen = false;
   OverlayEntry? _officerNotificationOverlayEntry;
 
-  final List<OfficerNotificationItem> _officerNotifications = [
-    OfficerNotificationItem(
-      id: '1',
-      message: 'ACES submitted Q1 2026 Audit Report.',
-      time: '2 mins ago',
-      isRead: false,
-    ),
-    OfficerNotificationItem(
-      id: '2',
-      message: 'iSITE roster updated: Total registered members have grown to 409 users.',
-      time: '2 hours ago',
-      isRead: false,
-    ),
-    OfficerNotificationItem(
-      id: '3',
-      message: "New Organization Request: 'CS Cup Sports Committee' has submitted an application dossier.",
-      time: '5 hours ago',
-      isRead: false,
-    ),
-    OfficerNotificationItem(
-      id: '4',
-      message: 'Access Request: Ellayssa Aguilar requested promotion to Officer for iSITE.',
-      time: '1 day ago',
-      isRead: true,
-    ),
-    OfficerNotificationItem(
-      id: '5',
-      message: 'System Action: Profile record for Princess Dianne Pastrana successfully moved to Activity Logs Archive.',
-      time: '2 days ago',
-      isRead: true,
-    ),
-  ];
+  final List<OfficerNotificationItem> _officerNotifications = [];
 
   void _showOfficerNotificationPopOver(BuildContext bellContext) {
     if (_officerNotificationOverlayEntry != null) {
@@ -295,7 +264,7 @@ class _DashboardPageState extends State<DashboardPage> {
   Widget _buildHeader(BuildContext context, {bool roundedBottom = true, Widget? bottomContent}) {
     final authProvider = Provider.of<AuthProvider>(context);
     final user = authProvider.currentUser;
-    final String fullName = user != null ? '${user.firstName} ${user.lastName}' : 'Juan Santos';
+    final String fullName = user != null ? '${user.firstName} ${user.lastName}' : 'User';
     final int activeRoleId = _overrideRoleId ?? user?.roleId ?? 2;
     final String roleName = _getRoleName(activeRoleId);
     final bool isOfficer = activeRoleId == 3;
@@ -551,7 +520,7 @@ class _DashboardPageState extends State<DashboardPage> {
                                     children: _buildDynamicBars(
                                       context,
                                       docsList,
-                                      docProvider.stats?.budget?.total ?? 150000.0,
+                                      docProvider.stats?.budget?.total ?? 0.0,
                                     ),
                                   ),
                                 ),
@@ -676,7 +645,7 @@ class _DashboardPageState extends State<DashboardPage> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Submit a new document for COSC Society audit trail',
+                'Submit a new document for your organization\'s audit trail',
                 style: GoogleFonts.inter(
                   fontSize: 13,
                   color: Colors.grey.shade500,
@@ -971,9 +940,9 @@ class _DashboardPageState extends State<DashboardPage> {
     final isDark = Provider.of<ThemeProvider>(context).isDarkMode;
     final authProvider = Provider.of<AuthProvider>(context);
     final user = authProvider.currentUser;
-    final String fullName = user != null ? '${user.firstName} ${user.lastName}' : 'Juan Santos';
-    final String initial = user != null && user.firstName.isNotEmpty ? user.firstName[0].toUpperCase() : 'J';
-    final String initial2 = user != null && user.lastName.isNotEmpty ? user.lastName[0].toUpperCase() : 'S';
+    final String fullName = user != null ? '${user.firstName} ${user.lastName}' : 'User';
+    final String initial = user != null && user.firstName.isNotEmpty ? user.firstName[0].toUpperCase() : 'U';
+    final String initial2 = user != null && user.lastName.isNotEmpty ? user.lastName[0].toUpperCase() : '';
     final String initials = '$initial$initial2';
 
     final docProvider = Provider.of<DocumentProvider>(context);
@@ -1494,9 +1463,9 @@ class _DashboardPageState extends State<DashboardPage> {
     final docProvider = Provider.of<DocumentProvider>(context);
     final stats = docProvider.stats;
 
-    final double total = stats?.budget?.total ?? 150000.0;
-    final double spent = stats?.budget?.spent ?? 87500.0;
-    final double remaining = stats?.budget?.remaining ?? 62500.0;
+    final double total = stats?.budget?.total ?? 0.0;
+    final double spent = stats?.budget?.spent ?? 0.0;
+    final double remaining = stats?.budget?.remaining ?? 0.0;
 
     return Container(
       color: isDark ? const Color(0xFF0B192C) : const Color(0xFFFAFAFA),
@@ -2252,11 +2221,11 @@ class _DashboardPageState extends State<DashboardPage> {
     final isDark = Provider.of<ThemeProvider>(context).isDarkMode;
     final authProvider = Provider.of<AuthProvider>(context);
     final user = authProvider.currentUser;
-    final String fullName = user != null ? '${user.firstName} ${user.lastName}' : 'Juan Dela Cruz Santos';
-    final String email = user?.email ?? 'juan.santos@pup.edu.ph';
+    final String fullName = user != null ? '${user.firstName} ${user.lastName}' : 'User';
+    final String email = user?.email ?? '';
     
-    final String initial = user != null && user.firstName.isNotEmpty ? user.firstName[0].toUpperCase() : 'J';
-    final String initial2 = user != null && user.lastName.isNotEmpty ? user.lastName[0].toUpperCase() : 'S';
+    final String initial = user != null && user.firstName.isNotEmpty ? user.firstName[0].toUpperCase() : 'U';
+    final String initial2 = user != null && user.lastName.isNotEmpty ? user.lastName[0].toUpperCase() : '';
     final String initials = '$initial$initial2';
 
     final int activeRoleId = _overrideRoleId ?? user?.roleId ?? 2;
@@ -2265,7 +2234,7 @@ class _DashboardPageState extends State<DashboardPage> {
 
     final docProvider = Provider.of<DocumentProvider>(context);
     final orgBudget = docProvider.organizationBudget;
-    final String orgName = orgBudget?.organization.orgName ?? (isOfficer ? 'COSC Society' : 'ISITE');
+    final String orgName = orgBudget?.organization.orgName ?? 'Not Assigned';
 
     return Container(
       color: isDark ? const Color(0xFF0B192C) : const Color(0xFFFAFAFA),
@@ -2297,7 +2266,7 @@ class _DashboardPageState extends State<DashboardPage> {
                     ),
                     child: Column(
                       children: [
-                        _buildInfoRow(context, roleName == 'Admin' ? 'Faculty ID' : 'Student ID', user?.studentId ?? '2023-00001-SM-0'),
+                        _buildInfoRow(context, roleName == 'Admin' ? 'Faculty ID' : 'Student ID', user?.studentId ?? '—'),
                         Divider(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.shade100, height: 1),
                         _buildInfoRow(context, 'Organization', orgName),
                         Divider(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.shade100, height: 1),
@@ -2305,7 +2274,7 @@ class _DashboardPageState extends State<DashboardPage> {
                         Divider(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.shade100, height: 1),
                         _buildInfoRow(context, 'Role', roleName),
                         Divider(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.shade100, height: 1),
-                        _buildInfoRow(context, 'Member Since', user != null ? '${_getMonthName(user.createdAt.month)} ${user.createdAt.year}' : 'September 2023'),
+                        _buildInfoRow(context, 'Member Since', user != null ? '${_getMonthName(user.createdAt.month)} ${user.createdAt.year}' : '—'),
                       ],
                     ),
                   ),

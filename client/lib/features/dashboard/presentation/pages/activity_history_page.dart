@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_application_transparatech/core/providers/theme_provider.dart';
-import 'package:flutter_application_transparatech/features/document_analysis/presentation/providers/document_provider.dart';
 
 class ActivityLogEntry {
   final String title;
@@ -75,41 +74,8 @@ class ActivityHistoryPage extends StatelessWidget {
     final themeProvider = Provider.of<ThemeProvider>(context);
     final isDark = themeProvider.isDarkMode;
 
-    // Dynamic look up of logged in officer's organization
-    final docProvider = Provider.of<DocumentProvider>(context);
-    final orgBudget = docProvider.organizationBudget;
-    final String orgName = orgBudget?.organization.orgName ?? 'ACES';
-
-    final List<ActivityLogEntry> entries = [
-      ActivityLogEntry(
-        title: 'Pauline Pauline (Treasurer) uploaded Budget Proposal',
-        detail: '${orgName}_Week_Budget.pdf',
-        time: 'June 15, 2026 • 02:15 PM',
-        status: 'PENDING',
-        actionType: 'upload',
-      ),
-      ActivityLogEntry(
-        title: 'System Operation changed state to Active',
-        detail: '$orgName status updated by Administrator',
-        time: 'June 14, 2026 • 11:00 AM',
-        status: 'ACTIVE',
-        actionType: 'state_change',
-      ),
-      ActivityLogEntry(
-        title: 'John Doe (Auditor) submitted Audit Certificate',
-        detail: '${orgName}_EOY_Clearance.pdf',
-        time: 'June 12, 2026 • 09:45 AM',
-        status: 'APPROVED',
-        actionType: 'upload',
-      ),
-      ActivityLogEntry(
-        title: 'Pauline Pauline (Treasurer) updated Receipt / Invoice',
-        detail: '${orgName}_Catering_Invoice.png',
-        time: 'June 10, 2026 • 04:30 PM',
-        status: 'FLAGGED',
-        actionType: 'update',
-      ),
-    ];
+    // Activity logs - to be fetched from server when activity_logs API is implemented
+    final List<ActivityLogEntry> entries = [];
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF0B192C) : const Color(0xFFF8FAFC),
@@ -159,7 +125,37 @@ class ActivityHistoryPage extends StatelessWidget {
         ),
         toolbarHeight: 70,
       ),
-      body: ListView.builder(
+      body: entries.isEmpty
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.history,
+                    size: 64,
+                    color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No Activity Logs Yet',
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white : const Color(0xFF1F2937),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Activity logs will appear here as actions are performed.',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      color: isDark ? Colors.grey.shade400 : Colors.grey.shade500,
+                    ),
+                  ),
+                ],
+              ),
+            )
+          : ListView.builder(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
         itemCount: entries.length,
         itemBuilder: (context, index) {

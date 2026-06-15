@@ -99,8 +99,8 @@ class _AccountVerificationPageState extends State<AccountVerificationPage> {
         duration: const Duration(seconds: 2),
       ),
       VerificationStep(
-        title: 'Assigning COSC Society org role',
-        subtitle: 'Role: Authorized Member - ISTE',
+        title: 'Assigning organization role',
+        subtitle: 'Role: Authorized Member',
         isComplete: false,
         duration: const Duration(seconds: 2),
       ),
