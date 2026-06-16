@@ -19,7 +19,7 @@ void showProfileDropdown(BuildContext context) {
   showDialog(
     context: context,
     barrierColor: Colors.black.withValues(alpha: 0.15), // light dimming
-    builder: (BuildContext context) {
+    builder: (BuildContext dialogContext) {
       return Dialog(
         alignment: Alignment.topRight,
         insetPadding: const EdgeInsets.only(top: 60, right: 20), // positions it near the avatar
@@ -89,7 +89,7 @@ void showProfileDropdown(BuildContext context) {
                 contentPadding: EdgeInsets.zero,
                 dense: true,
                 onTap: () {
-                  Navigator.pop(context);
+                  Navigator.pop(dialogContext);
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (context) => const AdminAccountSettingsScreen()),
@@ -111,7 +111,7 @@ void showProfileDropdown(BuildContext context) {
                 contentPadding: EdgeInsets.zero,
                 dense: true,
                 onTap: () {
-                  Navigator.pop(context);
+                  Navigator.pop(dialogContext);
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (context) => const AdminSettingsScreen()),
@@ -135,7 +135,7 @@ void showProfileDropdown(BuildContext context) {
                 contentPadding: EdgeInsets.zero,
                 dense: true,
                 onTap: () {
-                  Navigator.pop(context);
+                  Navigator.pop(dialogContext);
                   showConfirmationDialog(
                     context: context,
                     title: 'Confirm Logout',

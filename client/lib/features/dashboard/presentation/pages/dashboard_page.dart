@@ -312,246 +312,266 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Widget _buildHomeTab() {
+    final isDark = Provider.of<ThemeProvider>(context).isDarkMode;
     final docProvider = Provider.of<DocumentProvider>(context);
     final docsList = docProvider.documents;
 
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header Section
-          _buildHeader(context, roundedBottom: true),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Header Section
+        _buildHeader(context, roundedBottom: false),
 
-          // Main Content Area
-          Transform.translate(
-              offset: const Offset(0, -20), // Pull banner up slightly over header
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Transparency Banner
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.blue.shade50,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.blue.shade100, width: 1.5),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.blue.withValues(alpha: 0.1),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
+        // Main Content Area
+        Expanded(
+          child: Container(
+            color: isDark ? const Color(0xFF0B192C) : const Color(0xFFFAFAFA),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 24.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Transparency Banner
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF152238) : Colors.blue.shade50,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.blue.shade100,
+                        width: 1.5,
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(Icons.trending_up, color: Colors.blue.shade700, size: 18),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  'Transparency Dashboard',
-                                  style: GoogleFonts.inter(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w700,
-                                    color: Colors.blue.shade800,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            'Access verified financial documents, audit reports, and organizational transparency metrics',
-                            style: GoogleFonts.inter(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.blue.shade700.withValues(alpha: 0.8),
-                              height: 1.4,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 32),
-
-                    // Recent Documents Header
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          'Recent Documents',
-                          style: GoogleFonts.inter(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: const Color(0xFF1F2937),
-                          ),
-                        ),
-                        GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              _selectedIndex = 1;
-                            });
-                          },
-                          child: Text(
-                            'View All',
-                            style: GoogleFonts.inter(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: const Color(0xFF3B48F6),
-                            ),
-                          ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: isDark ? Colors.black.withValues(alpha: 0.2) : Colors.blue.withValues(alpha: 0.1),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
-
-                    // Documents List
-                    if (docsList.isEmpty) ...[
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(vertical: 40),
-                        alignment: Alignment.center,
-                        child: Column(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
                           children: [
-                            Icon(Icons.folder_open_outlined, size: 48, color: Colors.grey.shade300),
-                            const SizedBox(height: 12),
-                            Text(
-                              'No recent documents available',
-                              style: GoogleFonts.inter(
-                                fontSize: 13,
-                                color: Colors.grey.shade400,
-                                fontWeight: FontWeight.w500,
+                            Icon(Icons.trending_up, color: Colors.blue.shade700, size: 18),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Transparency Dashboard',
+                                style: GoogleFonts.inter(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  color: isDark ? Colors.white : Colors.blue.shade800,
+                                ),
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ],
                         ),
-                      ),
-                    ] else ...[
-                      ...docsList.take(3).map((doc) => _buildDocumentCard(
-                        context,
-                        title: doc.documentTitle,
-                        date: _formatDate(doc.submissionDate),
-                        hash: _getHash(doc),
-                      )),
-                    ],
-                    const SizedBox(height: 32),
-
-                    // Financial Overview Header
-                    Text(
-                      'Financial Overview',
-                      style: GoogleFonts.inter(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: const Color(0xFF1F2937),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Latest 6 months',
-                      style: GoogleFonts.inter(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.grey.shade500,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Financial Chart Setup (Custom Built to avoid dependencies)
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.grey.shade200),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.02),
-                            blurRadius: 8,
-                            offset: const Offset(0, 4),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Access verified financial documents, audit reports, and organizational transparency metrics',
+                          style: GoogleFonts.inter(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            color: isDark ? const Color(0xFF94A3B8) : Colors.blue.shade700.withValues(alpha: 0.8),
+                            height: 1.4,
                           ),
-                        ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+
+                  // Recent Documents Header
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        'Recent Documents',
+                        style: GoogleFonts.inter(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? Colors.white : const Color(0xFF1F2937),
+                        ),
                       ),
+                      GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _selectedIndex = 1;
+                          });
+                        },
+                        child: Text(
+                          'View All',
+                          style: GoogleFonts.inter(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF3B48F6),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Documents List
+                  if (docsList.isEmpty) ...[
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 40),
+                      alignment: Alignment.center,
                       child: Column(
                         children: [
-                          // Custom Bar Chart Area
-                          SizedBox(
-                            height: 160, // Chart overall height
-                            child: Stack(
-                              children: [
-                                // Grid Lines
-                                Column(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: List.generate(5, (index) {
-                                    final labels = ['100k', '80k', '60k', '40k', '20k', '0'];
-                                    return Row(
-                                      children: [
-                                        SizedBox(
-                                          width: 30,
-                                          child: Text(
-                                            labels[index],
-                                            style: GoogleFonts.inter(
-                                              fontSize: 10,
-                                              color: Colors.grey.shade400,
-                                            ),
-                                          ),
-                                        ),
-                                        Expanded(
-                                          child: Container(
-                                            height: 1,
-                                            color: Colors.grey.shade100,
-                                          ),
-                                        ),
-                                      ],
-                                    );
-                                  }),
-                                ),
-                                // Bars
-                                Padding(
-                                  padding: const EdgeInsets.only(left: 40.0), // offset for Y-axis labels
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                                    children: _buildDynamicBars(
-                                      context,
-                                      docsList,
-                                      docProvider.stats?.budget?.total ?? 0.0,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
+                          Icon(
+                            Icons.folder_open_outlined,
+                            size: 48,
+                            color: isDark ? const Color(0xFF94A3B8) : Colors.grey.shade300,
                           ),
-                          const SizedBox(height: 24),
-                          // Legend
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Container(width: 8, height: 8, color: const Color(0xFF34D399)),
-                              const SizedBox(width: 6),
-                              Text('Expenses', style: GoogleFonts.inter(fontSize: 12, color: Colors.grey.shade700)),
-                              const SizedBox(width: 24),
-                              Container(width: 8, height: 8, color: const Color(0xFF60A5FA)),
-                              const SizedBox(width: 6),
-                              Text('Budget', style: GoogleFonts.inter(fontSize: 12, color: Colors.grey.shade700)),
-                            ],
+                          const SizedBox(height: 12),
+                          Text(
+                            'No recent documents available',
+                            style: GoogleFonts.inter(
+                              fontSize: 13,
+                              color: isDark ? const Color(0xFF94A3B8) : Colors.grey.shade400,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 40),
+                  ] else ...[
+                    ...docsList.take(3).map((doc) => _buildDocumentCard(
+                      context,
+                      title: doc.documentTitle,
+                      date: _formatDate(doc.submissionDate),
+                      hash: _getHash(doc),
+                    )),
                   ],
-                ),
+                  const SizedBox(height: 32),
+
+                  // Financial Overview Header
+                  Text(
+                    'Financial Overview',
+                    style: GoogleFonts.inter(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white : const Color(0xFF1F2937),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Latest 6 months',
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: isDark ? const Color(0xFF94A3B8) : Colors.grey.shade500,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Financial Chart Setup (Custom Built to avoid dependencies)
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF152238) : Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.shade200),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.02),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      children: [
+                        // Custom Bar Chart Area
+                        SizedBox(
+                          height: 160, // Chart overall height
+                          child: Stack(
+                            children: [
+                              // Grid Lines
+                              Column(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: List.generate(5, (index) {
+                                  final labels = ['100k', '80k', '60k', '40k', '20k', '0'];
+                                  return Row(
+                                    children: [
+                                      SizedBox(
+                                        width: 30,
+                                        child: Text(
+                                          labels[index],
+                                          style: GoogleFonts.inter(
+                                            fontSize: 10,
+                                            color: isDark ? const Color(0xFF94A3B8) : Colors.grey.shade400,
+                                          ),
+                                        ),
+                                      ),
+                                      Expanded(
+                                        child: Container(
+                                          height: 1,
+                                          color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.shade100,
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                }),
+                              ),
+                              // Bars
+                              Padding(
+                                padding: const EdgeInsets.only(left: 40.0), // offset for Y-axis labels
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                  children: _buildDynamicBars(
+                                    context,
+                                    docsList,
+                                    docProvider.stats?.budget?.total ?? 0.0,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        // Legend
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(width: 8, height: 8, color: const Color(0xFF34D399)),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Expenses',
+                              style: GoogleFonts.inter(
+                                fontSize: 12,
+                                color: isDark ? const Color(0xFF94A3B8) : Colors.grey.shade700,
+                              ),
+                            ),
+                            const SizedBox(width: 24),
+                            Container(width: 8, height: 8, color: const Color(0xFF60A5FA)),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Budget',
+                              style: GoogleFonts.inter(
+                                fontSize: 12,
+                                color: isDark ? const Color(0xFF94A3B8) : Colors.grey.shade700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 40),
+                ],
               ),
             ),
-          ],
+          ),
         ),
-      );
+      ],
+    );
   }
 
   String _getRoleName(int roleId) {
