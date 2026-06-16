@@ -331,7 +331,7 @@ router.post('/documents', verifyToken, async (req: AuthRequest, res) => {
     let aiAnalysis = description || '';
     try {
       console.log(`VeriFi AI: Scanning document: "${title}"...`);
-      aiAnalysis = await analyzeDocument(title, fileType, description);
+      aiAnalysis = await analyzeDocument(title, fileType ?? 'application/pdf', description);
     } catch (err) {
       console.error('Failed to run AI document scanning:', err);
     }

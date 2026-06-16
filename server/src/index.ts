@@ -7,6 +7,9 @@ import apiRoutes from "./routes/api.js";
 
 const app = express();
 
+// Trust the first proxy (e.g. ngrok, Nginx, Cloudflare) to correctly get client IP for rate-limiting
+app.set("trust proxy", 1);
+
 // ── H-3: Security headers ──
 app.use(helmet());
 
