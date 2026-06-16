@@ -1,19 +1,32 @@
 import { Request, Response } from 'express';
 import { db } from '../db/index.js';
-import { accounts, organizations } from '../db/schema.js';
+import { accounts, organizations, roles } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
 import * as authService from '../services/auth.service.js';
 import { AuthRequest } from '../middleware/auth.middleware.js';
+import { signupSchema, loginSchema } from '../utils/validation.js';
+import { logActivity } from '../utils/audit-logger.js';
+import { config } from '../config.js';
 
-// Sign up
+// ──────────────────────────────────────────────
+// Sign up (C-5 fix: role is NEVER user-supplied)
+// ──────────────────────────────────────────────
+
 export const signup = async (req: Request, res: Response) => {
   try {
-    const { email, studentId, password, fullName, role, organizationCode } = req.body;
-
-    // Validate input
-    if (!email || !studentId || !password) {
-      return res.status(400).json({ error: 'Missing required fields' });
+    // ── M-1: Validate input with zod ──
+    const parsed = signupSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({
+        error: 'Validation failed',
+        issues: parsed.error.issues.map((i) => ({
+          field: i.path.join('.'),
+          message: i.message,
+        })),
+      });
     }
+
+    const { email, studentId, password, fullName, organizationCode } = parsed.data;
 
     // Validate password strength
     const passwordCheck = authService.validatePasswordStrength(password);
@@ -48,15 +61,17 @@ export const signup = async (req: Request, res: Response) => {
 
     // Generate username
     const username = authService.generateUsername(email);
-    
-    // Split full name
-    const { firstName, lastName } = authService.splitFullName(fullName || email.split('@')[0]);
 
-    // Get role
-    const roleId = await authService.getRoleIdByName(role || 'Student');
+    // Split full name
+    const { firstName, lastName } = authService.splitFullName(
+      fullName || email.split('@')[0],
+    );
+
+    // ── C-5: Always force Student role for self-registration ──
+    const roleId = await authService.getRoleIdByName('Student');
 
     // Get organization if provided
-    let organizationId = null;
+    let organizationId: number | null = null;
     if (organizationCode) {
       const org = await db
         .select()
@@ -96,15 +111,39 @@ export const signup = async (req: Request, res: Response) => {
         .limit(1);
 
       if (!newAccount || newAccount.length === 0) {
-        return res.status(500).json({ error: 'Failed to retrieve created account' });
+        return res.status(500).json({ error: 'Failed to create account' });
       }
 
       const user = newAccount[0];
 
-      // Generate JWT token
-      const token = authService.generateToken({ accountId: user.accountId, email: user.email });
+      // Fetch role name for JWT (H-5)
+      const userRole = await db
+        .select({ roleName: roles.roleName })
+        .from(roles)
+        .where(eq(roles.roleId, user.roleId))
+        .limit(1);
 
-      // Return response without password
+      // Generate JWT token with role info
+      const token = authService.generateToken({
+        accountId: user.accountId,
+        email: user.email,
+        roleId: user.roleId,
+        roleName: userRole[0]?.roleName || 'Student',
+      });
+
+      // Audit log
+      await logActivity({
+        userId: user.accountId,
+        action: 'SIGNUP',
+        module: 'AUTH',
+        resourceType: 'account',
+        resourceId: user.accountId,
+        description: `New account created for ${user.email}`,
+        req,
+        status: 'SUCCESS',
+      });
+
+      // Return response without password (strip sensitive fields)
       const { passwordHash, ...accountData } = user;
       res.status(201).json({
         message: 'Account created successfully',
@@ -114,7 +153,7 @@ export const signup = async (req: Request, res: Response) => {
     } catch (error: any) {
       console.error('Database insertion error:', error);
 
-      // Check for specific constraint violations
+      // ── H-4: Sanitized error messages — no raw DB details ──
       if (error.message?.includes('CHECK constraint failed')) {
         if (error.message.includes('email')) {
           return res.status(400).json({ error: 'Email must be a PUP Iskolar ng Bayan address' });
@@ -133,23 +172,27 @@ export const signup = async (req: Request, res: Response) => {
         }
       }
 
-      res.status(500).json({ error: 'Internal server error', details: error.message });
+      res.status(500).json({ error: 'Internal server error' });
     }
   } catch (error: any) {
     console.error('Signup error:', error);
-    res.status(500).json({ error: 'Internal server error', details: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 };
 
+// ──────────────────────────────────────────────
 // Login
+// ──────────────────────────────────────────────
+
 export const login = async (req: Request, res: Response) => {
   try {
-    const { email, password } = req.body;
-
-    // Validate input
-    if (!email || !password) {
+    // ── M-1: Validate input with zod ──
+    const parsed = loginSchema.safeParse(req.body);
+    if (!parsed.success) {
       return res.status(400).json({ error: 'Email and password are required' });
     }
+
+    const { email, password } = parsed.data;
 
     // Find account by email
     const account = await db
@@ -170,14 +213,59 @@ export const login = async (req: Request, res: Response) => {
     }
 
     // Compare password
-    const isPasswordValid = await authService.comparePassword(password, user.passwordHash || '');
+    const isPasswordValid = await authService.comparePassword(
+      password,
+      user.passwordHash || '',
+    );
 
     if (!isPasswordValid) {
+      // Audit log failed login
+      await logActivity({
+        userId: user.accountId,
+        action: 'LOGIN_FAILED',
+        module: 'AUTH',
+        resourceType: 'account',
+        resourceId: user.accountId,
+        description: `Failed login attempt for ${user.email}`,
+        req,
+        status: 'FAILURE',
+      });
+
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
-    // Generate JWT token
-    const token = authService.generateToken({ accountId: user.accountId, email: user.email });
+    // Fetch role name for JWT (H-5)
+    const userRole = await db
+      .select({ roleName: roles.roleName })
+      .from(roles)
+      .where(eq(roles.roleId, user.roleId))
+      .limit(1);
+
+    // Generate JWT token with role info
+    const token = authService.generateToken({
+      accountId: user.accountId,
+      email: user.email,
+      roleId: user.roleId,
+      roleName: userRole[0]?.roleName || 'Student',
+    });
+
+    // Update lastLogin (H-7)
+    await db
+      .update(accounts)
+      .set({ lastLogin: new Date() })
+      .where(eq(accounts.accountId, user.accountId));
+
+    // Audit log successful login
+    await logActivity({
+      userId: user.accountId,
+      action: 'LOGIN',
+      module: 'AUTH',
+      resourceType: 'account',
+      resourceId: user.accountId,
+      description: `Successful login for ${user.email}`,
+      req,
+      status: 'SUCCESS',
+    });
 
     // Return response without password
     const { passwordHash, ...accountData } = user;
@@ -192,7 +280,10 @@ export const login = async (req: Request, res: Response) => {
   }
 };
 
+// ──────────────────────────────────────────────
 // Get current user profile
+// ──────────────────────────────────────────────
+
 export const getProfile = async (req: AuthRequest, res: Response) => {
   try {
     const accountId = req.user?.accountId;
