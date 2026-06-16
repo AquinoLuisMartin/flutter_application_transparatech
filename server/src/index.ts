@@ -14,11 +14,27 @@ app.use(
   cors({
     origin: (origin, callback) => {
       // Allow requests with no origin (mobile apps, curl, Postman)
-      if (!origin || config.corsOrigins.includes(origin)) {
+      if (!origin) {
         callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
+        return;
       }
+
+      if (config.corsOrigins.includes(origin)) {
+        callback(null, true);
+        return;
+      }
+
+      // In development, automatically allow any localhost/127.0.0.1 port to facilitate Flutter web debugging
+      if (!config.isProduction) {
+        const isLocal = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+        if (isLocal) {
+          callback(null, true);
+          return;
+        }
+      }
+
+      console.warn(`CORS Blocked: Origin '${origin}' is not allowed by CORS_ORIGINS config.`);
+      callback(new Error(`Not allowed by CORS: Origin '${origin}' is not in the allowlist`));
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE"],
@@ -38,17 +54,17 @@ app.use("/api", apiRoutes);
 
 // ── H-4: Sanitized error handler — no internal details in production ──
 app.use((err: any, req: any, res: any, next: any) => {
-  console.error("Unhandled error:", err);
-
-  if (err instanceof SyntaxError) {
+  if (err instanceof SyntaxError || err.status === 400) {
+    console.warn(`Client request error (400 Bad Request): ${err.message}`);
     return res.status(400).json({ error: "Malformed request body" });
   }
 
   // CORS rejection
-  if (err.message === "Not allowed by CORS") {
+  if (err.message && err.message.includes("Not allowed by CORS")) {
     return res.status(403).json({ error: "Origin not allowed" });
   }
 
+  console.error("Unhandled error:", err);
   res.status(500).json({
     error: "Internal server error",
     ...(config.isProduction ? {} : { details: err.message }),
