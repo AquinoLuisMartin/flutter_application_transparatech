@@ -1,4 +1,4 @@
-﻿/// Network Configuration
+/// Network Configuration
 /// 
 /// API client and network configuration for the application
 library;
@@ -76,11 +76,21 @@ class ApiClient implements HttpClient {
     if (kIsWeb) {
       return 'http://localhost:3000';
     }
+
+    // TODO: If you are running on a physical Android/iOS device (instead of an emulator), 
+    // set your computer's local network IP address here (e.g. '192.168.1.15').
+    const String physicalDeviceIp = ''; 
     
     try {
       if (Platform.isAndroid) {
+        if (physicalDeviceIp.isNotEmpty) {
+          return 'http://$physicalDeviceIp:3000';
+        }
         return 'http://10.0.2.2:3000';
       } else {
+        if (physicalDeviceIp.isNotEmpty) {
+          return 'http://$physicalDeviceIp:3000';
+        }
         return 'http://localhost:3000';
       }
     } catch (e) {
