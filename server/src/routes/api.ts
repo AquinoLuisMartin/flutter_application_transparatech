@@ -16,6 +16,7 @@ import {
   requireRole,
   AuthRequest,
 } from "../middleware/auth.middleware.js";
+import { chatWithAssistant } from "../services/ai.service.js";
 import {
   statusUpdateSchema,
   idParamSchema,
@@ -426,5 +427,75 @@ router.put(
     }
   },
 );
+
+// ──────────────────────────────────────────────
+// POST /api/chat (Interactive AI Chat Assistant)
+// ──────────────────────────────────────────────
+router.post('/chat', verifyToken, async (req: AuthRequest, res) => {
+  try {
+    const { message, history } = req.body;
+    if (!message) {
+      return res.status(400).json({ error: 'Message is required' });
+    }
+
+    const accountId = req.user!.accountId;
+
+    // Fetch user's organizationId
+    const userAccount = await db
+      .select({ organizationId: accounts.organizationId })
+      .from(accounts)
+      .where(eq(accounts.accountId, accountId))
+      .limit(1);
+
+    const organizationId = userAccount[0]?.organizationId;
+
+    // Fetch documents of the same organization
+    let documentContext = '';
+    if (organizationId) {
+      const orgDocs = await db
+        .select({
+          documentId: documents.documentId,
+          documentTitle: documents.documentTitle,
+          documentDescription: documents.documentDescription,
+          submissionDate: documents.submissionDate,
+          statusName: documentStatuses.statusName,
+          uploaderFirstName: accounts.firstName,
+          uploaderLastName: accounts.lastName,
+        })
+        .from(documents)
+        .innerJoin(accounts, eq(documents.uploadedBy, accounts.accountId))
+        .leftJoin(documentStatuses, eq(documents.statusId, documentStatuses.statusId))
+        .where(
+          and(
+            eq(accounts.organizationId, organizationId),
+            eq(documents.isDeleted, 0)
+          )
+        );
+
+      if (orgDocs.length > 0) {
+        documentContext = orgDocs.map((doc) => {
+          const dateStr = doc.submissionDate ? new Date(doc.submissionDate).toLocaleDateString() : 'Unknown Date';
+          return `
+- Document ID: #${doc.documentId}
+  Title: "${doc.documentTitle}"
+  Uploaded By: ${doc.uploaderFirstName} ${doc.uploaderLastName}
+  Submission Date: ${dateStr}
+  Status: ${doc.statusName || 'PENDING'}
+  Audit Breakdown:
+  ${doc.documentDescription || 'No breakdown detail available.'}
+          `.trim();
+        }).join('\n\n');
+      }
+    }
+
+    const chatHistory = history || [];
+    const reply = await chatWithAssistant(message, chatHistory, documentContext);
+
+    res.json({ reply });
+  } catch (error) {
+    console.error('Error in chat endpoint:', error);
+    res.status(500).json({ error: 'Failed to process chat request' });
+  }
+});
 
 export default router;

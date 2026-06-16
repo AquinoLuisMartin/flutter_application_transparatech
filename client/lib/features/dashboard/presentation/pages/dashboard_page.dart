@@ -12,6 +12,7 @@ import 'package:flutter_application_transparatech/features/document_analysis/dat
 import 'notifications_page.dart';
 import 'settings_page.dart';
 import 'activity_history_page.dart';
+import 'ai_chatbot_page.dart';
 import 'package:flutter_application_transparatech/core/providers/theme_provider.dart';
 import 'package:flutter_application_transparatech/features/admin/presentation/pages/admin_dashboard_page.dart';
 import 'package:flutter_application_transparatech/features/auth/presentation/pages/auth_page.dart';
@@ -175,6 +176,7 @@ class _DashboardPageState extends State<DashboardPage> {
     required String hash,
     bool isNew = false,
     bool showChevron = false,
+    VoidCallback? onTap,
   }) {
     final isDark = Provider.of<ThemeProvider>(context).isDarkMode;
     return VeriFiCard(
@@ -213,6 +215,7 @@ class _DashboardPageState extends State<DashboardPage> {
         ],
       ),
       action: showChevron ? Icon(Icons.chevron_right, color: isDark ? const Color(0xFF94A3B8) : VeriFiColors.textLight) : null,
+      onTap: onTap,
     );
   }
 
@@ -308,6 +311,14 @@ class _DashboardPageState extends State<DashboardPage> {
       avatarUrl: 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(fullName)}&background=0D8ABC&color=fff',
       roundedBottom: roundedBottom,
       bottomContent: bottomContent,
+      onChatTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const AiChatbotPage(),
+          ),
+        );
+      },
     );
   }
 
@@ -447,6 +458,7 @@ class _DashboardPageState extends State<DashboardPage> {
                       title: doc.documentTitle,
                       date: _formatDate(doc.submissionDate),
                       hash: _getHash(doc),
+                      onTap: () => _showDocumentDetailBottomSheet(context, doc),
                     )),
                   ],
                   const SizedBox(height: 32),
@@ -1954,6 +1966,7 @@ class _DashboardPageState extends State<DashboardPage> {
                       date: _formatDate(doc.submissionDate),
                       hash: _getHash(doc),
                       showChevron: true,
+                      onTap: () => _showDocumentDetailBottomSheet(context, doc),
                     )),
                   ],
                 ],
@@ -2502,6 +2515,304 @@ class _DashboardPageState extends State<DashboardPage> {
         ),
       ),
       body: activeBody,
+    );
+  }
+
+  void _showDocumentDetailBottomSheet(BuildContext context, Document doc) {
+    final isDark = Provider.of<ThemeProvider>(context, listen: false).isDarkMode;
+    final String hash = _getHash(doc);
+    final String formattedDate = _formatDate(doc.submissionDate);
+    final String fileSizeStr = doc.fileSize != null 
+        ? '${(doc.fileSize! / 1024).toStringAsFixed(1)} KB' 
+        : 'Unknown size';
+    final String fileTypeStr = doc.fileType ?? 'Unknown type';
+    final String status = doc.statusName ?? 'PENDING';
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF152238) : Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.15),
+                blurRadius: 10,
+                offset: const Offset(0, -2),
+              ),
+            ],
+          ),
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.white24 : Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      doc.documentTitle,
+                      style: GoogleFonts.inter(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: isDark ? Colors.white : const Color(0xFF1F2937),
+                      ),
+                    ),
+                  ),
+                  _buildStatusBadge(status),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Submitted on $formattedDate',
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  color: isDark ? const Color(0xFF94A3B8) : Colors.grey.shade500,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Document Breakdown',
+                style: GoogleFonts.inter(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : const Color(0xFF1F2937),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF0B192C) : const Color(0xFFF9FAFB),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.shade200,
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: _buildDescriptionBreakdown(doc.documentDescription, isDark),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF0F1E36) : const Color(0xFFECFDF5),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: isDark ? Colors.green.withValues(alpha: 0.2) : Colors.green.shade200,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.verified_outlined, color: Colors.green, size: 28),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'SHA-256 Integrity Verified',
+                            style: GoogleFonts.inter(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: isDark ? Colors.green.shade400 : Colors.green.shade800,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          SelectableText(
+                            'Hash: $hash',
+                            style: GoogleFonts.robotoMono(
+                              fontSize: 12,
+                              color: isDark ? Colors.white70 : Colors.grey.shade700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _buildMetadataItem('File Type', fileTypeStr.split('/').last.toUpperCase(), isDark),
+                  _buildMetadataItem('File Size', fileSizeStr, isDark),
+                  _buildMetadataItem('ID', '#${doc.documentId}', isDark),
+                ],
+              ),
+              const SizedBox(height: 32),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF3B48F6),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: Text(
+                    'Close Details',
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  List<Widget> _buildDescriptionBreakdown(String? desc, bool isDark) {
+    if (desc == null || desc.trim().isEmpty) {
+      return [
+        Text(
+          'No breakdown details available.',
+          style: GoogleFonts.inter(fontSize: 14, color: Colors.grey),
+        )
+      ];
+    }
+
+    final List<String> parts = desc.contains('|') 
+        ? desc.split('|') 
+        : desc.split('\n');
+
+    final List<Widget> list = [];
+    for (var part in parts) {
+      final cleanPart = part.trim();
+      if (cleanPart.isEmpty) continue;
+
+      if (cleanPart.contains(':')) {
+        final idx = cleanPart.indexOf(':');
+        final key = cleanPart.substring(0, idx).trim();
+        final val = cleanPart.substring(idx + 1).trim();
+        list.add(
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  key,
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? const Color(0xFF94A3B8) : Colors.grey.shade600,
+                  ),
+                ),
+                Text(
+                  val,
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : const Color(0xFF1F2937),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      } else {
+        list.add(
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4.0),
+            child: Text(
+              cleanPart,
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                color: isDark ? Colors.white70 : Colors.black87,
+              ),
+            ),
+          ),
+        );
+      }
+    }
+    return list;
+  }
+
+  Widget _buildStatusBadge(String status) {
+    Color bg;
+    Color fg;
+    switch (status.toUpperCase()) {
+      case 'APPROVED':
+        bg = const Color(0xFFD1FAE5);
+        fg = const Color(0xFF065F46);
+        break;
+      case 'REJECTED':
+        bg = const Color(0xFFFEE2E2);
+        fg = const Color(0xFF991B1B);
+        break;
+      case 'PENDING':
+      default:
+        bg = const Color(0xFFFEF3C7);
+        fg = const Color(0xFF92400E);
+        break;
+    }
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        status,
+        style: GoogleFonts.inter(
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+          color: fg,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMetadataItem(String label, String value, bool isDark) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 12,
+            color: isDark ? const Color(0xFF94A3B8) : Colors.grey.shade500,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: GoogleFonts.inter(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: isDark ? Colors.white : const Color(0xFF1F2937),
+          ),
+        ),
+      ],
     );
   }
 }

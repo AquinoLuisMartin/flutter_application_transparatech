@@ -16,6 +16,7 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@ngrok/ngrok": "^1.7.0",
     "bcryptjs": "^3.0.3",
     "better-sqlite3": "^12.9.0",

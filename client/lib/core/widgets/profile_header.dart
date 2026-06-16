@@ -51,6 +51,9 @@ class VeriFiProfileHeader extends StatelessWidget {
   /// Background color override for dashboard style
   final Color? backgroundColor;
 
+  /// Callback when chat icon is tapped
+  final VoidCallback? onChatTap;
+
   /// Constructor for VeriFiProfileHeader
   const VeriFiProfileHeader({
     super.key,
@@ -68,6 +71,7 @@ class VeriFiProfileHeader extends StatelessWidget {
     this.bottomContent,
     this.roundedBottom = true,
     this.backgroundColor,
+    this.onChatTap,
   });
 
   String _getInitials(String name) {
@@ -153,6 +157,21 @@ class VeriFiProfileHeader extends StatelessWidget {
               const SizedBox(width: 16),
               Row(
                 children: [
+                  // Chat / AI Assistant button
+                  if (onChatTap != null) ...[
+                    GestureDetector(
+                      onTap: onChatTap,
+                      child: Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.chat_bubble_outline, color: Colors.white, size: 22),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                  ],
                   // History button (hidden for Officer in Dashboard Style header)
                   if (!isOfficer && onHistoryTap != null) ...[
                     GestureDetector(

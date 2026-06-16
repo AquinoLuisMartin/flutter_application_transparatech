@@ -15,6 +15,7 @@ import {
   escapeLikePattern,
 } from '../utils/validation.js';
 import { logActivity } from '../utils/audit-logger.js';
+import { analyzeDocument } from '../services/ai.service.js';
 
 const router = express.Router();
 
@@ -323,11 +324,20 @@ router.post('/documents', verifyToken, async (req: AuthRequest, res) => {
 
     const statusId = pendingStatus[0]?.statusId || 2;
 
+    // Call Gemini AI to perform "file scanning" and audit analysis
+    let aiAnalysis = description || '';
+    try {
+      console.log(`VeriFi AI: Scanning document: "${title}"...`);
+      aiAnalysis = await analyzeDocument(title, fileType, description);
+    } catch (err) {
+      console.error('Failed to run AI document scanning:', err);
+    }
+
     const result = await db
       .insert(documents)
       .values({
         documentTitle: title,
-        documentDescription: description ?? null,
+        documentDescription: aiAnalysis,
         filePath: filePath,
         fileSize: fileSize ?? 0,
         fileType: fileType ?? 'application/pdf',
