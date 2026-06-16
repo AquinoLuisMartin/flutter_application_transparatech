@@ -27,6 +27,7 @@ export const signupSchema = z.object({
   password: z.string().min(8).max(128),
   fullName: z.string().min(1).max(255).optional(),
   organizationCode: z.string().max(20).optional(),
+  role: z.string().max(50).optional(),
 });
 
 export const loginSchema = z.object({

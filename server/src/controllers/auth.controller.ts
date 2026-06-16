@@ -26,7 +26,7 @@ export const signup = async (req: Request, res: Response) => {
       });
     }
 
-    const { email, studentId, password, fullName, organizationCode } = parsed.data;
+    const { email, studentId, password, fullName, organizationCode, role } = parsed.data;
 
     // Validate password strength
     const passwordCheck = authService.validatePasswordStrength(password);
@@ -67,8 +67,9 @@ export const signup = async (req: Request, res: Response) => {
       fullName || email.split('@')[0],
     );
 
-    // ── C-5: Always force Student role for self-registration ──
-    const roleId = await authService.getRoleIdByName('Student');
+    // Allow self-registration as Student or Officer, default to Student
+    const registrationRole = (role === 'Officer') ? 'Officer' : 'Student';
+    const roleId = await authService.getRoleIdByName(registrationRole);
 
     // Get organization if provided
     let organizationId: number | null = null;
