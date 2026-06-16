@@ -27,7 +27,6 @@ class DashboardPage extends StatefulWidget {
 
 class _DashboardPageState extends State<DashboardPage> {
   int _selectedIndex = 0;
-  int? _overrideRoleId; // Developer role override for dashboard UI testing
 
   Map<String, double> _calculateMonthlyExpenses(List<Document> documents) {
     final Map<String, double> monthlyMap = {
@@ -266,7 +265,7 @@ class _DashboardPageState extends State<DashboardPage> {
     final authProvider = Provider.of<AuthProvider>(context);
     final user = authProvider.currentUser;
     final String fullName = user?.fullName ?? 'User';
-    final int activeRoleId = _overrideRoleId ?? user?.roleId ?? 2;
+    final int activeRoleId = user?.roleId ?? 2;
     final String roleName = _getRoleName(activeRoleId);
     final bool isOfficer = activeRoleId == 3;
 
@@ -2230,9 +2229,8 @@ class _DashboardPageState extends State<DashboardPage> {
     final String initial2 = user != null && user.lastName.isNotEmpty ? user.lastName[0].toUpperCase() : '';
     final String initials = '$initial$initial2';
 
-    final int activeRoleId = _overrideRoleId ?? user?.roleId ?? 2;
+    final int activeRoleId = user?.roleId ?? 2;
     final String roleName = _getRoleName(activeRoleId);
-    final bool isOfficer = activeRoleId == 3 || activeRoleId == 1;
 
     final docProvider = Provider.of<DocumentProvider>(context);
     final orgBudget = docProvider.organizationBudget;
@@ -2277,82 +2275,6 @@ class _DashboardPageState extends State<DashboardPage> {
                         _buildInfoRow(context, 'Role', roleName),
                         Divider(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.shade100, height: 1),
                         _buildInfoRow(context, 'Member Since', user != null ? '${_getMonthName(user.createdAt.month)} ${user.createdAt.year}' : '—'),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Developer Switcher
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF152238) : Colors.amber.shade50,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.amber.shade200),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(Icons.bug_report_outlined, color: isDark ? Colors.amber : Colors.amber.shade800),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Developer Tools',
-                              style: GoogleFonts.inter(
-                                fontWeight: FontWeight.bold,
-                                color: isDark ? Colors.amber : Colors.amber.shade900,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'Override dashboard role layout for presentation and verification purposes:',
-                          style: GoogleFonts.inter(
-                            fontSize: 12,
-                            color: isDark ? const Color(0xFF94A3B8) : Colors.amber.shade800,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Expanded(
-                              child: Text(
-                                'Active UI: ${activeRoleId == 1 ? "Admin (System)" : isOfficer ? "Officer (E-Wallet)" : "Student (Standard)"}',
-                                style: GoogleFonts.inter(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                  color: isDark ? Colors.white : Colors.amber.shade900,
-                                ),
-                              ),
-                            ),
-                            ElevatedButton(
-                              onPressed: () {
-                                setState(() {
-                                  if (activeRoleId == 2) {
-                                    _overrideRoleId = 3; // Switch to Officer
-                                  } else if (activeRoleId == 3) {
-                                    _overrideRoleId = 1; // Switch to Admin
-                                  } else {
-                                    _overrideRoleId = 2; // Switch to Student
-                                  }
-                                  _selectedIndex = 0; // Reset index to Home
-                                });
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: isDark ? const Color(0xFF0B192C) : Colors.amber.shade800,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                textStyle: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold),
-                                elevation: 0,
-                              ),
-                              child: const Text('Toggle Role UI'),
-                            ),
-                          ],
-                        ),
                       ],
                     ),
                   ),
@@ -2408,7 +2330,7 @@ class _DashboardPageState extends State<DashboardPage> {
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
     final user = authProvider.currentUser;
-    final int activeRoleId = _overrideRoleId ?? user?.roleId ?? 2;
+    final int activeRoleId = user?.roleId ?? 2;
 
     if (activeRoleId == 1) {
       return const AdminDashboardPage();
