@@ -294,8 +294,8 @@ class AdminHomeScreen extends StatelessWidget {
     final authProvider = Provider.of<AuthProvider>(context);
     final user = authProvider.currentUser;
     // Fallback profile title is forced to "luis luis"
-    final String fullName = (user != null && '${user.firstName} ${user.lastName}'.trim().isNotEmpty && '${user.firstName} ${user.lastName}' != 'admin admin')
-        ? '${user.firstName} ${user.lastName}'
+    final String fullName = (user != null && user.fullName.trim().isNotEmpty && user.fullName != 'admin admin')
+        ? user.fullName
         : 'luis luis';
 
     return Container(
@@ -985,8 +985,8 @@ class AdminPlaceholderScreen extends StatelessWidget {
   Widget _buildHeader(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
     final user = authProvider.currentUser;
-    final String fullName = (user != null && '${user.firstName} ${user.lastName}'.trim().isNotEmpty && '${user.firstName} ${user.lastName}' != 'admin admin')
-        ? '${user.firstName} ${user.lastName}'
+    final String fullName = (user != null && user.fullName.trim().isNotEmpty && user.fullName != 'admin admin')
+        ? user.fullName
         : 'luis luis';
 
     return Container(

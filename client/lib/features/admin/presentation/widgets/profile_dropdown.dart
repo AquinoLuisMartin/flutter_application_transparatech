@@ -13,7 +13,7 @@ import 'package:flutter_application_transparatech/features/admin/presentation/pa
 void showProfileDropdown(BuildContext context) {
   final authProvider = Provider.of<AuthProvider>(context, listen: false);
   final user = authProvider.currentUser;
-  final String fullName = user != null ? '${user.firstName} ${user.lastName}' : 'admin admin';
+  final String fullName = user?.fullName ?? 'admin admin';
   final String email = user?.email ?? 'admin@pup.edu.ph';
 
   showDialog(

@@ -7,7 +7,7 @@ plugins {
 
 android {
     namespace = "com.example.flutter_application_transparatech"
-    compileSdk = 35
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {

@@ -63,19 +63,12 @@ async function seed() {
           organizationId: orgId,
           academicYear: "2025-2026",
           totalBudget: 15000000, // 150,000.00 in cents
-          spentAmount: 8750000,  // 87,500.00 spent
-          remainingAmount: 6250000,
+          spentAmount: 0,        // start clean
+          remainingAmount: 15000000,
         }).run();
       }
     }
 
-    // Ensure all existing budgets are updated to match the seeded document expenses
-    await db.update(budgets)
-      .set({
-        spentAmount: 8750000,
-        remainingAmount: 6250000,
-      })
-      .run();
 
     const allOrgs = await db.select().from(organizations);
     const isiteOrgId = allOrgs.find(o => o.orgCode === "iSITE")?.organizationId;
@@ -151,67 +144,7 @@ async function seed() {
       console.log("Test admin created: admin@pup.edu.ph / AdminPassword123!");
     }
 
-    // Seed test documents representing the budget expenses
-    console.log("Seeding test documents for iSITE...");
-    const officerUser = await db.select().from(accounts).where(eq(accounts.email, "officer@pup.edu.ph")).limit(1);
-    const officerUserId = officerUser[0]?.accountId;
-    const allStatuses = await db.select().from(documentStatuses);
-    const approvedStatus = allStatuses.find(s => s.statusName === "APPROVED");
-    const approvedStatusId = approvedStatus?.statusId || 3;
 
-    if (officerUserId && approvedStatusId) {
-      const existingDocs = await db.select().from(documents).where(eq(documents.uploadedBy, officerUserId)).limit(1);
-      if (existingDocs.length === 0) {
-        console.log("Seeding documents...");
-        await db.insert(documents).values([
-          {
-            documentTitle: "Tanglaw Receipt",
-            documentDescription: "Payment receipt for Tanglaw lighting.\n\nOrganization: iSITE\nTotal Amount Spent: 27562.00",
-            filePath: "receipt_tanglaw.pdf",
-            fileSize: 154200,
-            fileType: "application/pdf",
-            uploadedBy: officerUserId,
-            statusId: approvedStatusId,
-            submissionDate: new Date("2026-03-15T10:00:00Z"),
-            lastModified: new Date("2026-03-15T10:00:00Z"),
-          },
-          {
-            documentTitle: "Foundation Week Expense Report",
-            documentDescription: "Expense report for Foundation Week.\n\nOrganization: iSITE\nTotal Amount Spent: 22137.00",
-            filePath: "foundation_week_report.pdf",
-            fileSize: 245000,
-            fileType: "application/pdf",
-            uploadedBy: officerUserId,
-            statusId: approvedStatusId,
-            submissionDate: new Date("2026-02-10T14:30:00Z"),
-            lastModified: new Date("2026-02-10T14:30:00Z"),
-          },
-          {
-            documentTitle: "IT Days Invoice",
-            documentDescription: "Invoice for IT Days events.\n\nOrganization: iSITE\nTotal Amount Spent: 14175.00",
-            filePath: "it_days_invoice.pdf",
-            fileSize: 98000,
-            fileType: "application/pdf",
-            uploadedBy: officerUserId,
-            statusId: approvedStatusId,
-            submissionDate: new Date("2026-01-20T09:15:00Z"),
-            lastModified: new Date("2026-01-20T09:15:00Z"),
-          },
-          {
-            documentTitle: "IT Night Caterer Bill",
-            documentDescription: "Catering bill for IT Night.\n\nOrganization: iSITE\nTotal Amount Spent: 23625.00",
-            filePath: "it_night_catering.pdf",
-            fileSize: 112000,
-            fileType: "application/pdf",
-            uploadedBy: officerUserId,
-            statusId: approvedStatusId,
-            submissionDate: new Date("2026-01-05T18:00:00Z"),
-            lastModified: new Date("2026-01-05T18:00:00Z"),
-          }
-        ]).run();
-        console.log("Documents seeded successfully!");
-      }
-    }
 
     console.log("Seeding completed successfully!");
   } catch (error) {

@@ -35,6 +35,13 @@ class User {
     required this.updatedAt,
   });
 
+  String get fullName {
+    if (lastName.isEmpty || lastName.trim().toLowerCase() == firstName.trim().toLowerCase()) {
+      return firstName;
+    }
+    return '$firstName $lastName';
+  }
+
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
       accountId: json['accountId'] ?? 0,

@@ -265,7 +265,7 @@ class _DashboardPageState extends State<DashboardPage> {
   Widget _buildHeader(BuildContext context, {bool roundedBottom = true, Widget? bottomContent}) {
     final authProvider = Provider.of<AuthProvider>(context);
     final user = authProvider.currentUser;
-    final String fullName = user != null ? '${user.firstName} ${user.lastName}' : 'User';
+    final String fullName = user?.fullName ?? 'User';
     final int activeRoleId = _overrideRoleId ?? user?.roleId ?? 2;
     final String roleName = _getRoleName(activeRoleId);
     final bool isOfficer = activeRoleId == 3;
@@ -940,7 +940,7 @@ class _DashboardPageState extends State<DashboardPage> {
     final isDark = Provider.of<ThemeProvider>(context).isDarkMode;
     final authProvider = Provider.of<AuthProvider>(context);
     final user = authProvider.currentUser;
-    final String fullName = user != null ? '${user.firstName} ${user.lastName}' : 'User';
+    final String fullName = user?.fullName ?? 'User';
     final String initial = user != null && user.firstName.isNotEmpty ? user.firstName[0].toUpperCase() : 'U';
     final String initial2 = user != null && user.lastName.isNotEmpty ? user.lastName[0].toUpperCase() : '';
     final String initials = '$initial$initial2';
@@ -2223,7 +2223,7 @@ class _DashboardPageState extends State<DashboardPage> {
     final isDark = Provider.of<ThemeProvider>(context).isDarkMode;
     final authProvider = Provider.of<AuthProvider>(context);
     final user = authProvider.currentUser;
-    final String fullName = user != null ? '${user.firstName} ${user.lastName}' : 'User';
+    final String fullName = user?.fullName ?? 'User';
     final String email = user?.email ?? '';
     
     final String initial = user != null && user.firstName.isNotEmpty ? user.firstName[0].toUpperCase() : 'U';
