@@ -73,6 +73,16 @@ class ApiClient implements HttpClient {
             Duration(seconds: AppConstants.apiTimeoutSeconds);
 
   static String _getDefaultBaseUrl() {
+    // If you are using a tunnel service like ngrok or localtunnel to expose your local
+    // server, set the public URL here (e.g. 'https://xyz-random-domain.ngrok-free.app').
+    // This will override the local/emulator IPs below.
+    const String tunnelUrl = 'https://grime-selective-document.ngrok-free.dev';
+
+    if (tunnelUrl.isNotEmpty) {
+      // Clean trailing slash if present to avoid double slashes in paths
+      return tunnelUrl.endsWith('/') ? tunnelUrl.substring(0, tunnelUrl.length - 1) : tunnelUrl;
+    }
+
     if (kIsWeb) {
       return 'http://localhost:3000';
     }

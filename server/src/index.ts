@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
+import ngrok from "@ngrok/ngrok";
 import { config } from "./config.js";
 import apiRoutes from "./routes/api.js";
 
@@ -71,7 +72,30 @@ app.use((err: any, req: any, res: any, next: any) => {
   });
 });
 
+// Store ngrok listener globally to prevent garbage collection from closing the tunnel
+let activeNgrokListener: any = null;
+
 // Start server
-app.listen(config.port, () => {
+app.listen(config.port, async () => {
   console.log(`Server is running on http://localhost:${config.port}`);
+
+  // Automatically start ngrok tunnel in development if NGROK_AUTHTOKEN is set
+  if (!config.isProduction) {
+    const authtoken = process.env.NGROK_AUTHTOKEN;
+    if (authtoken) {
+      try {
+        console.log("Starting ngrok tunnel...");
+        activeNgrokListener = await ngrok.forward({
+          addr: config.port,
+          authtoken: authtoken,
+        });
+        console.log(`🚀 ngrok tunnel established at: ${activeNgrokListener.url()}`);
+        console.log(`👉 Put this URL as the tunnelUrl in client/lib/core/network/http_client.dart`);
+      } catch (err: any) {
+        console.error("Failed to start ngrok tunnel:", err.message || err);
+      }
+    } else {
+      console.log("💡 Tip: To start ngrok automatically with the server, add NGROK_AUTHTOKEN to your server/.env file.");
+    }
+  }
 });
