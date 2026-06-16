@@ -39,9 +39,10 @@ router.get('/organization', verifyToken, async (req: AuthRequest, res) => {
     const organizationId = user[0]?.organizationId;
 
     if (!organizationId) {
-      return res
-        .status(404)
-        .json({ error: 'User is not assigned to any organization' });
+      return res.json({
+        organization: null,
+        budget: null,
+      });
     }
 
     // Get organization details
@@ -89,9 +90,13 @@ router.get('/stats', verifyToken, async (req: AuthRequest, res) => {
     const organizationId = user[0]?.organizationId;
 
     if (!organizationId) {
-      return res
-        .status(404)
-        .json({ error: 'User is not assigned to any organization' });
+      return res.json({
+        byStatus: [],
+        totalActive: 0,
+        complianceScore: 0,
+        transparencyIndex: 0,
+        budget: null,
+      });
     }
 
     // Get document counts by status for the organization
@@ -193,9 +198,7 @@ router.get('/documents', verifyToken, async (req: AuthRequest, res) => {
     const organizationId = user[0]?.organizationId;
 
     if (!organizationId) {
-      return res
-        .status(404)
-        .json({ error: 'User is not assigned to any organization' });
+      return res.json([]);
     }
 
     // ── M-5: Escape LIKE wildcard characters in search input ──

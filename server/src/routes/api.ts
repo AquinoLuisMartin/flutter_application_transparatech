@@ -221,7 +221,7 @@ router.get(
         return {
           id: d.id.toString(),
           title: d.title,
-          organization: d.orgCode || "ISITE",
+          organization: d.orgCode || "iSITE",
           senderName: `${d.senderFirstName} ${d.senderLastName}`,
           documentType:
             d.fileType === "application/pdf"
@@ -280,7 +280,7 @@ router.get(
         email: u.email,
         role:
           u.roleName === "Officer" ? "Officers" : u.roleName || "Student",
-        organization: u.orgCode || "ISITE",
+        organization: u.orgCode || "iSITE",
         lastLogin: u.lastLogin
           ? `Last login: ${new Date(u.lastLogin).toLocaleDateString()}`
           : "Never logged in",
